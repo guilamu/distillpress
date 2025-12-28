@@ -2,10 +2,10 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: DistillPress 1.0.0\n"
+"Project-Id-Version: DistillPress 1.1.2\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
 "POT-Creation-Date: 2025-12-28T17:00:00+00:00\n"
-"PO-Revision-Date: 2025-12-28 19:16+0100\n"
+"PO-Revision-Date: 2025-12-28 23:01+0100\n"
 "Last-Translator: guilamu\n"
 "Language-Team: French\n"
 "Language: fr_FR\n"
@@ -317,7 +317,7 @@ msgstr "Activer le résumé"
 
 #: includes/class-admin-settings.php
 msgid "Generate bullet point summaries"
-msgstr "Générer des résumés à puces"
+msgstr "Générer le résumé"
 
 #: includes/class-admin-settings.php
 msgid "Enable Teaser"
@@ -325,7 +325,7 @@ msgstr "Activer l'accroche"
 
 #: includes/class-admin-settings.php
 msgid "Generate teaser paragraphs"
-msgstr "Générer des paragraphes d'accroche"
+msgstr "Générer l'accroche"
 
 #: includes/class-admin-settings.php
 msgid "Category Settings"
