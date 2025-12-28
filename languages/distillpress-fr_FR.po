@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: DistillPress 1.0.0\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
 "POT-Creation-Date: 2025-12-28T00:00:00+00:00\n"
-"PO-Revision-Date: 2025-12-28 15:46+0100\n"
+"PO-Revision-Date: 2025-12-28 18:05+0100\n"
 "Last-Translator: ChatGPT <translate@example.com>\n"
 "Language-Team: French\n"
 "Language: fr_FR\n"
@@ -22,7 +22,7 @@ msgstr "Traitement en cours..."
 
 #: distillpress.php
 msgid "Generating summary and teaser..."
-msgstr "Génération du résumé et du teaser..."
+msgstr "Génération du résumé et de l'accroche..."
 
 #: distillpress.php
 msgid "Finding categories..."
@@ -38,7 +38,7 @@ msgstr "Succès !"
 
 #: distillpress.php
 msgid "Summary and teaser generated successfully!"
-msgstr "Résumé et teaser générés avec succès !"
+msgstr "Résumé et accroche générés avec succès !"
 
 #: distillpress.php
 msgid "Categories selected successfully!"
@@ -58,11 +58,11 @@ msgstr "Copier le résumé"
 
 #: distillpress.php
 msgid "Copy teaser"
-msgstr "Copier le teaser"
+msgstr "Copier l'accroche"
 
 #: distillpress.php
 msgid "No teaser generated."
-msgstr "Aucun teaser généré."
+msgstr "Aucune accroche généré."
 
 #: distillpress.php
 msgid "Copied!"
@@ -364,7 +364,7 @@ msgstr "Cette catégorie sera toujours appliquée en plus des catégories sélec
 
 #: includes/class-meta-box.php
 msgid "Generate Summary & Teaser"
-msgstr "Générer le résumé et le teaser"
+msgstr "Générer le résumé et l'accroche"
 
 #: includes/class-meta-box.php
 msgid "Summary"
@@ -372,7 +372,7 @@ msgstr "Résumé"
 
 #: includes/class-meta-box.php
 msgid "Teaser"
-msgstr "Teaser"
+msgstr "Accroche"
 
 #: includes/class-meta-box.php
 msgid "Number of points:"
