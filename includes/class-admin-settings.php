@@ -129,6 +129,16 @@ class DistillPress_Admin_Settings
 			)
 		);
 
+		register_setting(
+			'distillpress_settings',
+			'distillpress_custom_prompt',
+			array(
+				'type' => 'string',
+				'sanitize_callback' => 'sanitize_textarea_field',
+				'default' => '',
+			)
+		);
+
 		// API Settings Section
 		add_settings_section(
 			'distillpress_api_section',
@@ -189,6 +199,14 @@ class DistillPress_Admin_Settings
 			'distillpress_enable_teaser',
 			__('Enable Teaser', 'distillpress'),
 			array(__CLASS__, 'render_enable_teaser_field'),
+			'distillpress',
+			'distillpress_summary_section'
+		);
+
+		add_settings_field(
+			'distillpress_custom_prompt',
+			__('Custom Instructions', 'distillpress'),
+			array(__CLASS__, 'render_custom_prompt_field'),
 			'distillpress',
 			'distillpress_summary_section'
 		);
@@ -463,4 +481,23 @@ class DistillPress_Admin_Settings
 		</label>
 		<?php
 	}
+
+	/**
+	 * Render custom prompt textarea.
+	 */
+	public static function render_custom_prompt_field()
+	{
+		$custom_prompt = get_option('distillpress_custom_prompt', '');
+		?>
+				<textarea id="distillpress_custom_prompt" 
+						  name="distillpress_custom_prompt" 
+						  rows="3" 
+						  class="large-text"
+						  placeholder="<?php esc_attr_e('Example: Always mention the author name. Use a formal tone.', 'distillpress'); ?>"><?php echo esc_textarea($custom_prompt); ?></textarea>
+				<p class="description">
+					<?php esc_html_e('Add custom instructions to the AI prompt (1-2 sentences). These will be appended to the system prompt.', 'distillpress'); ?>
+				</p>
+				<?php
+	}
 }
+
