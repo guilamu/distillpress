@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: DistillPress 1.0.0\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
-"POT-Creation-Date: 2025-12-28T00:00:00+00:00\n"
+"POT-Creation-Date: 2025-12-28T17:00:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,6 +15,14 @@ msgstr ""
 
 #: distillpress.php
 msgid "Processing..."
+msgstr ""
+
+#: distillpress.php
+msgid "Generating summary..."
+msgstr ""
+
+#: distillpress.php
+msgid "Generating teaser..."
 msgstr ""
 
 #: distillpress.php
@@ -31,6 +39,14 @@ msgstr ""
 
 #: distillpress.php
 msgid "Success!"
+msgstr ""
+
+#: distillpress.php
+msgid "Summary generated successfully!"
+msgstr ""
+
+#: distillpress.php
+msgid "Teaser generated successfully!"
 msgstr ""
 
 #: distillpress.php
@@ -62,6 +78,10 @@ msgid "No teaser generated."
 msgstr ""
 
 #: distillpress.php
+msgid "No summary generated."
+msgstr ""
+
+#: distillpress.php
 msgid "Copied!"
 msgstr ""
 
@@ -78,11 +98,15 @@ msgid "No content provided."
 msgstr ""
 
 #: distillpress.php
+msgid "Both summary and teaser are disabled in settings."
+msgstr ""
+
+#: distillpress.php
 msgid "POE API key not configured. Please go to Settings > DistillPress."
 msgstr ""
 
 #: distillpress.php
-msgid "You are a precise summarization assistant. Your task is to create factual summaries based EXCLUSIVELY on the provided text. You must:"
+msgid "You are a precise summarization assistant. Your task is to create factual content based EXCLUSIVELY on the provided text. You must:"
 msgstr ""
 
 #: distillpress.php
@@ -98,29 +122,53 @@ msgid "3. NEVER hallucinate or invent information not present in the text"
 msgstr ""
 
 #: distillpress.php
-msgid "4. Use neutral, objective language"
+msgid "4. Use neutral, objective language for the summary"
 msgstr ""
 
 #: distillpress.php
-msgid "5. Preserve the original meaning accurately"
+msgid "5. Make the teaser engaging but still factual"
 msgstr ""
 
 #: distillpress.php
-msgid "6. Respond in the SAME LANGUAGE as the source text"
+msgid "6. Preserve the original meaning accurately"
+msgstr ""
+
+#: distillpress.php
+msgid "7. Respond in the SAME LANGUAGE as the source text"
+msgstr ""
+
+#: distillpress.php
+msgid "8. Return your response in JSON format with \"summary\" and \"teaser\" fields"
+msgstr ""
+
+#: distillpress.php
+msgid "8. Return your response in JSON format with \"summary\" field"
+msgstr ""
+
+#: distillpress.php
+msgid "8. Return your response in JSON format with \"teaser\" field"
+msgstr ""
+
+#: distillpress.php
+msgid "Analyze the following article and provide both a summary and a teaser."
+msgstr ""
+
+#: distillpress.php
+msgid "Analyze the following article and provide a summary."
+msgstr ""
+
+#: distillpress.php
+msgid "Analyze the following article and provide a teaser."
 msgstr ""
 
 #. translators: %d: number of bullet points
 #: distillpress.php
-msgid "Summarize the following article in exactly %d key bullet points."
+msgid "SUMMARY: Create exactly %d key bullet points."
 msgstr ""
 
 #. translators: 1: total max characters, 2: max characters per point
 #: distillpress.php
 msgid "The total summary must not exceed %1$d characters (approximately %2$d characters per point)."
-msgstr ""
-
-#: distillpress.php
-msgid "Requirements:"
 msgstr ""
 
 #: distillpress.php
@@ -136,11 +184,23 @@ msgid "- Focus on the most important and factual information"
 msgstr ""
 
 #: distillpress.php
-msgid "- Use the same language as the source text"
+msgid "TEASER: Write a short, engaging paragraph (2-3 sentences) that entices readers to read the full article. The teaser should:"
 msgstr ""
 
 #: distillpress.php
-msgid "- Do NOT include any introduction or conclusion, only the bullet points"
+msgid "- Highlight the most compelling aspect of the article"
+msgstr ""
+
+#: distillpress.php
+msgid "- Create curiosity without revealing everything"
+msgstr ""
+
+#: distillpress.php
+msgid "- Stay factual and based only on the article content"
+msgstr ""
+
+#: distillpress.php
+msgid "Return ONLY valid JSON in this exact format:"
 msgstr ""
 
 #: distillpress.php
@@ -247,6 +307,22 @@ msgstr ""
 
 #: includes/class-admin-settings.php
 msgid "Default Reduction Percentage"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Enable Summary"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Generate bullet point summaries"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Enable Teaser"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Generate teaser paragraphs"
 msgstr ""
 
 #: includes/class-admin-settings.php
@@ -360,7 +436,31 @@ msgid "This category will always be applied in addition to AI-selected categorie
 msgstr ""
 
 #: includes/class-meta-box.php
+msgid "Summary & Teaser"
+msgstr ""
+
+#: includes/class-meta-box.php
 msgid "Generate Summary & Teaser"
+msgstr ""
+
+#: includes/class-meta-box.php
+msgid "Regenerate Summary & Teaser"
+msgstr ""
+
+#: includes/class-meta-box.php
+msgid "Generate Summary"
+msgstr ""
+
+#: includes/class-meta-box.php
+msgid "Regenerate Summary"
+msgstr ""
+
+#: includes/class-meta-box.php
+msgid "Generate Teaser"
+msgstr ""
+
+#: includes/class-meta-box.php
+msgid "Regenerate Teaser"
 msgstr ""
 
 #: includes/class-meta-box.php
