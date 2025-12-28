@@ -104,7 +104,6 @@
 .distillpress-result h5:not(:first-child) {
     margin-top: 15px;
     padding-top: 10px;
-    border-top: 1px solid #dcdcde;
 }
 
 .distillpress-result-content {
@@ -153,7 +152,6 @@
     display: flex;
     gap: 8px;
     padding-top: 8px;
-    border-top: 1px solid #dcdcde;
 }
 
 .distillpress-result-actions .button {
