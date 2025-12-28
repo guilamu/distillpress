@@ -66,6 +66,19 @@ add_filter( 'distillpress_supported_post_types', function( $post_types ) {
 Yes. Your API key stays server-side.
 
 ## Changelog
+
+### 1.1.0
+- **New:** Enable/disable summary generation in settings
+- **New:** Enable/disable teaser (accroche) generation in settings
+- **New:** Summary and teaser are now saved as post meta and persist across page reloads
+- **New:** "Regenerate" button appears when previously generated content exists
+- **New:** Dynamic button text based on enabled features (Generate Summary, Generate Teaser, or both)
+- **New:** Section is hidden when both summary and teaser are disabled
+- **Improved:** French translations updated (teaser → accroche)
+- **Improved:** Input validation with enforced min/max ranges
+- **Improved:** Modern WordPress script loading with `wp_add_inline_script()`
+- **Fixed:** Missing `distillpress_default_category` option cleanup on uninstall
+
 ### 1.0.0
 - Initial release
 - AI-powered article summarization and teaser generation
@@ -73,3 +86,4 @@ Yes. Your API key stays server-side.
 - Support for Classic Editor and Gutenberg
 - GitHub auto-updates
 - Multilingual support
+
