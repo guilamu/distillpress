@@ -67,6 +67,9 @@ Yes. Your API key stays server-side.
 
 ## Changelog
 
+### 1.1.1
+- **New:** Custom Instructions field to add personalized instructions to the AI prompt
+
 ### 1.1.0
 - **New:** Enable/disable summary generation in settings
 - **New:** Enable/disable teaser (accroche) generation in settings

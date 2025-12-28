@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE API. Distill your content to its essence.
- * Version:           1.1.0
+ * Version:           1.1.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.1.0');
+define('DISTILLPRESS_VERSION', '1.1.1');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -296,6 +296,12 @@ final class DistillPress
 
 		$system_prompt = __('You are a precise summarization assistant. Your task is to create factual content based EXCLUSIVELY on the provided text. You must:', 'distillpress') . "\n\n" .
 			implode("\n", $system_instructions);
+
+		// Append custom instructions if set.
+		$custom_prompt = get_option('distillpress_custom_prompt', '');
+		if (!empty($custom_prompt)) {
+			$system_prompt .= "\n\n" . __('Additional instructions:', 'distillpress') . "\n" . $custom_prompt;
+		}
 
 		// Build user prompt.
 		$user_prompt = '';

@@ -27,6 +27,7 @@ function distillpress_uninstall()
 	delete_option('distillpress_default_category');
 	delete_option('distillpress_enable_summary');
 	delete_option('distillpress_enable_teaser');
+	delete_option('distillpress_custom_prompt');
 
 	// Delete transients
 	delete_transient('distillpress_github_release');
@@ -60,6 +61,7 @@ function distillpress_uninstall()
 			delete_option('distillpress_default_category');
 			delete_option('distillpress_enable_summary');
 			delete_option('distillpress_enable_teaser');
+			delete_option('distillpress_custom_prompt');
 
 			delete_transient('distillpress_github_release');
 
