@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.1.1');
+define('DISTILLPRESS_VERSION', '1.1.2');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -570,4 +570,5 @@ function distillpress()
 
 // Initialize
 distillpress();
+
 
