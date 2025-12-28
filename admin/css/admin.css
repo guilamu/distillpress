@@ -1,0 +1,298 @@
+/**
+ * DistillPress Admin Styles
+ *
+ * @package DistillPress
+ */
+
+/* ==========================================================================
+   Meta Box Styles
+   ========================================================================== */
+
+.distillpress-metabox {
+    padding: 10px 0;
+}
+
+.distillpress-section {
+    margin-bottom: 15px;
+}
+
+.distillpress-section h4 {
+    margin: 0 0 10px 0;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.distillpress-section hr {
+    margin: 15px 0;
+    border: none;
+    border-top: 1px solid #dcdcde;
+}
+
+/* ==========================================================================
+   Form Fields
+   ========================================================================== */
+
+.distillpress-field {
+    margin-bottom: 10px;
+}
+
+.distillpress-field label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: #50575e;
+}
+
+.distillpress-field input.small-text {
+    width: 60px;
+}
+
+.distillpress-field .description {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #787c82;
+    font-style: italic;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.distillpress-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.distillpress-btn-loading {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.distillpress-btn-loading .spinner {
+    float: none;
+    margin: 0;
+}
+
+/* ==========================================================================
+   Results Display
+   ========================================================================== */
+
+.distillpress-result {
+    margin-top: 12px;
+    padding: 10px;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+}
+
+.distillpress-result h5 {
+    margin: 0 0 8px 0;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1d2327;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.distillpress-result h5:not(:first-child) {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #dcdcde;
+}
+
+.distillpress-result-content {
+    margin-bottom: 10px;
+}
+
+.distillpress-teaser,
+.distillpress-summary ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.distillpress-teaser p,
+.distillpress-summary ul li {
+    position: relative;
+    padding: 4px 0 4px 16px;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #1d2327;
+}
+
+.distillpress-teaser p::before,
+.distillpress-summary ul li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #2271b1;
+    font-weight: bold;
+}
+
+.distillpress-categories-list {
+    margin: 5px 0 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.distillpress-categories-list li {
+    padding: 3px 0;
+    font-size: 12px;
+    color: #1d2327;
+}
+
+.distillpress-result-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #dcdcde;
+}
+
+.distillpress-result-actions .button {
+    flex: 1;
+    text-align: center;
+}
+
+/* ==========================================================================
+   Messages
+   ========================================================================== */
+
+.distillpress-message {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.distillpress-message-success {
+    background: #d1e7dd;
+    border: 1px solid #badbcc;
+    color: #0f5132;
+}
+
+.distillpress-message-error {
+    background: #f8d7da;
+    border: 1px solid #f5c2c7;
+    color: #842029;
+}
+
+/* ==========================================================================
+   Notices
+   ========================================================================== */
+
+.distillpress-notice {
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.distillpress-notice-warning {
+    background: #fff3cd;
+    border: 1px solid #ffecb5;
+    color: #664d03;
+}
+
+.distillpress-notice-warning a {
+    color: #664d03;
+    font-weight: 600;
+}
+
+.distillpress-notice-warning a:hover {
+    color: #332701;
+}
+
+/* ==========================================================================
+   Settings Page Styles
+   ========================================================================== */
+
+.settings_page_distillpress .form-table th {
+    width: 200px;
+}
+
+.settings_page_distillpress .regular-text {
+    max-width: 400px;
+}
+
+.settings_page_distillpress code {
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+/* ==========================================================================
+   Frontend Summary Block (for inserted summaries)
+   ========================================================================== */
+
+.distillpress-article-summary {
+    background: #f8f9fa;
+    border-left: 4px solid #2271b1;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 0 4px 4px 0;
+}
+
+.distillpress-article-summary ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.distillpress-article-summary ul li {
+    position: relative;
+    padding: 5px 0 5px 20px;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.distillpress-article-summary ul li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #2271b1;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+/* ==========================================================================
+   Responsive Adjustments
+   ========================================================================== */
+
+@media screen and (max-width: 782px) {
+    .distillpress-result-actions {
+        flex-direction: column;
+    }
+
+    .distillpress-result-actions .button {
+        width: 100%;
+    }
+
+    .settings_page_distillpress .form-table th {
+        width: auto;
+    }
+}
+
+/* ==========================================================================
+   Animation for Loading States
+   ========================================================================== */
+
+@keyframes distillpress-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.distillpress-btn[disabled] .distillpress-btn-loading {
+    animation: distillpress-pulse 1.5s ease-in-out infinite;
+}
