@@ -67,6 +67,9 @@ Yes. Your API key stays server-side.
 
 ## Changelog
 
+### 1.1.2
+- Minor edits
+
 ### 1.1.1
 - **New:** Custom Instructions field to add personalized instructions to the AI prompt
 
@@ -89,4 +92,5 @@ Yes. Your API key stays server-side.
 - Support for Classic Editor and Gutenberg
 - GitHub auto-updates
 - Multilingual support
+
 
