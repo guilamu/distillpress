@@ -167,8 +167,8 @@ class DistillPress_Meta_Box
 							<label for="distillpress-reduction-percent">
 								<?php esc_html_e('Max length (% of original):', 'distillpress'); ?>
 							</label>
-							<input type="number" id="distillpress-reduction-percent"
-								value="<?php echo esc_attr($default_reduction); ?>" min="0" max="100" class="small-text">
+							<input type="number" id="distillpress-reduction-percent" value="<?php echo esc_attr($default_reduction); ?>"
+								min="0" max="100" class="small-text">
 							<span>%</span>
 							<p class="description">
 								<?php esc_html_e('0 = no limit', 'distillpress'); ?>
@@ -208,8 +208,6 @@ class DistillPress_Meta_Box
 						<?php endif; ?>
 					</div>
 				</div>
-
-				<hr>
 			<?php endif; ?>
 
 			<!-- Category Section -->

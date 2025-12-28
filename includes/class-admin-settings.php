@@ -272,27 +272,6 @@ class DistillPress_Admin_Settings
 				submit_button(__('Save Settings', 'distillpress'));
 				?>
 			</form>
-
-			<hr>
-
-			<h2><?php esc_html_e('How to Get Your POE API Key', 'distillpress'); ?></h2>
-			<ol>
-				<li><?php esc_html_e('Go to poe.com and sign in to your account', 'distillpress'); ?></li>
-				<li><?php esc_html_e('Navigate to Settings → API', 'distillpress'); ?></li>
-				<li><?php esc_html_e('Generate a new API key', 'distillpress'); ?></li>
-				<li><?php esc_html_e('Copy the key and paste it in the field above', 'distillpress'); ?></li>
-			</ol>
-
-			<p>
-				<strong><?php esc_html_e('Security Tip:', 'distillpress'); ?></strong>
-				<?php
-				printf(
-					/* translators: %s: constant name */
-					esc_html__('For production sites, consider defining your API key in wp-config.php: %s', 'distillpress'),
-					'<code>define( \'DISTILLPRESS_POE_API_KEY\', \'your-api-key-here\' );</code>'
-				);
-				?>
-			</p>
 		</div>
 		<?php
 	}
@@ -489,15 +468,12 @@ class DistillPress_Admin_Settings
 	{
 		$custom_prompt = get_option('distillpress_custom_prompt', '');
 		?>
-				<textarea id="distillpress_custom_prompt" 
-						  name="distillpress_custom_prompt" 
-						  rows="3" 
-						  class="large-text"
-						  placeholder="<?php esc_attr_e('Example: Always mention the author name. Use a formal tone.', 'distillpress'); ?>"><?php echo esc_textarea($custom_prompt); ?></textarea>
-				<p class="description">
-					<?php esc_html_e('Add custom instructions to the AI prompt (1-2 sentences). These will be appended to the system prompt.', 'distillpress'); ?>
-				</p>
-				<?php
+		<textarea id="distillpress_custom_prompt" name="distillpress_custom_prompt" rows="3" class="large-text"
+			placeholder="<?php esc_attr_e('Example: Always mention the author name. Use a formal tone.', 'distillpress'); ?>"><?php echo esc_textarea($custom_prompt); ?></textarea>
+		<p class="description">
+			<?php esc_html_e('Add custom instructions to the AI prompt (1-2 sentences). These will be appended to the system prompt.', 'distillpress'); ?>
+		</p>
+		<?php
 	}
 }
 
