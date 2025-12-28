@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: DistillPress 1.0.0\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
 "POT-Creation-Date: 2025-12-28T17:00:00+00:00\n"
-"PO-Revision-Date: 2025-12-28 18:52+0100\n"
+"PO-Revision-Date: 2025-12-28 19:16+0100\n"
 "Last-Translator: guilamu\n"
 "Language-Team: French\n"
 "Language: fr_FR\n"
@@ -513,3 +513,19 @@ msgstr "Veuillez configurer votre clé API POE dans les %s."
 #: includes/class-meta-box.php
 msgid "settings"
 msgstr "réglages"
+
+#: includes/class-admin-settings.php
+msgid "Custom Instructions"
+msgstr "Instructions personnalisées"
+
+#: includes/class-admin-settings.php
+msgid "Example: Always mention the author name. Use a formal tone."
+msgstr "Exemple : Toujours mentionner le nom de l'auteur. Utiliser un ton formel."
+
+#: includes/class-admin-settings.php
+msgid "Add custom instructions to the AI prompt (1-2 sentences). These will be appended to the system prompt."
+msgstr "Ajoutez des instructions personnalisées au prompt IA (1-2 phrases). Celles-ci seront ajoutées au prompt système."
+
+#: distillpress.php
+msgid "Additional instructions:"
+msgstr "Instructions supplémentaires :"
