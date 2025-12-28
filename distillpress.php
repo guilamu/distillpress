@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE API. Distill your content to its essence.
- * Version:           1.1.1
+ * Version:           1.1.2
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -570,3 +570,4 @@ function distillpress()
 
 // Initialize
 distillpress();
+
