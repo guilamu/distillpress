@@ -15,11 +15,65 @@
     var DistillPressAdmin = {
 
         /**
+         * Settings from meta box data attributes.
+         */
+        settings: {
+            enableSummary: true,
+            enableTeaser: true
+        },
+
+        /**
          * Initialize the admin functionality.
          */
         init: function() {
+            this.initSettings();
             this.bindEvents();
             this.initSettingsPage();
+            this.loadSavedData();
+        },
+
+        /**
+         * Initialize settings from meta box data attributes.
+         */
+        initSettings: function() {
+            var $metabox = $('.distillpress-metabox');
+            if ($metabox.length) {
+                this.settings.enableSummary = $metabox.data('enable-summary') === 1;
+                this.settings.enableTeaser = $metabox.data('enable-teaser') === 1;
+            }
+        },
+
+        /**
+         * Load saved summary/teaser data on page load.
+         */
+        loadSavedData: function() {
+            var $metabox = $('.distillpress-metabox');
+            if (!$metabox.length) {
+                return;
+            }
+
+            var savedSummary = $metabox.data('saved-summary') || '';
+            var savedTeaser = $metabox.data('saved-teaser') || '';
+
+            if (savedSummary || savedTeaser) {
+                var $result = $('#distillpress-summary-result');
+
+                if (savedSummary && this.settings.enableSummary) {
+                    $result.find('.distillpress-summary-content').html(
+                        '<div class="distillpress-summary">' + 
+                        this.formatSummary(savedSummary) + 
+                        '</div>'
+                    );
+                }
+
+                if (savedTeaser && this.settings.enableTeaser) {
+                    $result.find('.distillpress-teaser-content').html(
+                        '<div class="distillpress-teaser">' + this.escapeHtml(savedTeaser) + '</div>'
+                    );
+                }
+
+                $result.show();
+            }
         },
 
         /**
@@ -95,9 +149,11 @@
         generateSummary: function(e) {
             e.preventDefault();
 
+            var self = this;
             var $btn = $('#distillpress-generate-summary');
             var $result = $('#distillpress-summary-result');
             var $message = $('#distillpress-message');
+            var postId = $btn.data('post-id');
 
             var content = this.getPostContent();
 
@@ -111,7 +167,6 @@
 
             // Show loading state
             this.setButtonLoading($btn, true);
-            $result.hide();
             $message.hide();
 
             $.ajax({
@@ -121,35 +176,61 @@
                     action: 'distillpress_generate_summary',
                     nonce: distillpressData.nonce,
                     content: content,
+                    post_id: postId,
                     num_points: numPoints,
                     reduction_percent: reductionPercent
                 },
                 success: function(response) {
                     if (response.success) {
-                        // Display summary
-                        $result.find('.distillpress-summary-content').html(
-                            '<div class="distillpress-summary">' + 
-                            DistillPressAdmin.formatSummary(response.data.summary) + 
-                            '</div>'
-                        );
+                        // Display summary if enabled and available
+                        if (self.settings.enableSummary && response.data.summary) {
+                            $result.find('.distillpress-summary-content').html(
+                                '<div class="distillpress-summary">' + 
+                                self.formatSummary(response.data.summary) + 
+                                '</div>'
+                            );
+                        } else if (self.settings.enableSummary) {
+                            $result.find('.distillpress-summary-content').html(
+                                '<em>' + distillpressData.i18n.no_summary + '</em>'
+                            );
+                        }
                         
-                        // Display teaser
-                        var teaserHtml = response.data.teaser 
-                            ? '<div class="distillpress-teaser">' + DistillPressAdmin.escapeHtml(response.data.teaser) + '</div>'
-                            : '<em>' + distillpressData.i18n.no_teaser + '</em>';
-                        $result.find('.distillpress-teaser-content').html(teaserHtml);
+                        // Display teaser if enabled and available
+                        if (self.settings.enableTeaser && response.data.teaser) {
+                            $result.find('.distillpress-teaser-content').html(
+                                '<div class="distillpress-teaser">' + self.escapeHtml(response.data.teaser) + '</div>'
+                            );
+                        } else if (self.settings.enableTeaser) {
+                            $result.find('.distillpress-teaser-content').html(
+                                '<em>' + distillpressData.i18n.no_teaser + '</em>'
+                            );
+                        }
                         
                         $result.show();
-                        DistillPressAdmin.showMessage($message, distillpressData.i18n.summary_generated, 'success');
+
+                        // Update button text to regenerate
+                        var regenerateText = $btn.data('regenerate-text');
+                        $btn.find('.distillpress-btn-text').text(regenerateText);
+
+                        // Show appropriate success message
+                        var successMsg;
+                        if (self.settings.enableSummary && self.settings.enableTeaser) {
+                            successMsg = distillpressData.i18n.both_generated;
+                        } else if (self.settings.enableSummary) {
+                            successMsg = distillpressData.i18n.summary_generated;
+                        } else {
+                            successMsg = distillpressData.i18n.teaser_generated;
+                        }
+                        self.showMessage($message, successMsg, 'success');
                     } else {
-                        DistillPressAdmin.showMessage($message, response.data.message || distillpressData.i18n.error, 'error');
+                        self.showMessage($message, response.data.message || distillpressData.i18n.error, 'error');
                     }
                 },
                 error: function() {
-                    DistillPressAdmin.showMessage($message, distillpressData.i18n.error, 'error');
+                    self.showMessage($message, distillpressData.i18n.error, 'error');
                 },
                 complete: function() {
-                    DistillPressAdmin.setButtonLoading($btn, false);
+                    self.setButtonLoading($btn, false);
                 }
             });
         },
@@ -162,6 +243,7 @@
         autoCategorize: function(e) {
             e.preventDefault();
 
+            var self = this;
             var $btn = $('#distillpress-auto-categorize');
             var $result = $('#distillpress-category-result');
             var $message = $('#distillpress-message');
@@ -197,28 +279,28 @@
                         var categoryIds = response.data.category_ids;
 
                         // Update category checkboxes in the editor
-                        DistillPressAdmin.updateCategoryCheckboxes(categoryIds);
+                        self.updateCategoryCheckboxes(categoryIds);
 
                         // Show result
                         $result.find('.distillpress-result-content').html(
                             '<p><strong>' + distillpressData.i18n.categories_selected + '</strong></p>' +
                             '<ul class="distillpress-categories-list">' +
                             categoryNames.map(function(name) {
-                                return '<li>✓ ' + DistillPressAdmin.escapeHtml(name) + '</li>';
+                                return '<li>✓ ' + self.escapeHtml(name) + '</li>';
                             }).join('') +
                             '</ul>'
                         );
                         $result.show();
-                        DistillPressAdmin.showMessage($message, distillpressData.i18n.categories_selected, 'success');
+                        self.showMessage($message, distillpressData.i18n.categories_selected, 'success');
                     } else {
-                        DistillPressAdmin.showMessage($message, response.data.message || distillpressData.i18n.no_categories, 'error');
+                        self.showMessage($message, response.data.message || distillpressData.i18n.no_categories, 'error');
                     }
                 },
                 error: function() {
-                    DistillPressAdmin.showMessage($message, distillpressData.i18n.error, 'error');
+                    self.showMessage($message, distillpressData.i18n.error, 'error');
                 },
                 complete: function() {
-                    DistillPressAdmin.setButtonLoading($btn, false);
+                    self.setButtonLoading($btn, false);
                 }
             });
         },
@@ -384,6 +466,10 @@
          * @return {string} Formatted HTML.
          */
         formatSummary: function(summary) {
+            if (!summary) {
+                return '';
+            }
+
             // Escape HTML first
             var escaped = this.escapeHtml(summary);
             
@@ -412,6 +498,9 @@
          * @return {string} Escaped text.
          */
         escapeHtml: function(text) {
+            if (!text) {
+                return '';
+            }
             var map = {
                 '&': '&amp;',
                 '<': '&lt;',
