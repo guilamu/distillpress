@@ -67,10 +67,13 @@ Yes. Your API key stays server-side.
 
 ## Changelog
 
-### 1.1.2
-- Minor edits
+### 1.2.0
+- **New:** API Request Log now includes a "Points" column showing actual POE credits consumed
+- **New:** Points cost tracking via POE's `points_history` API endpoint for accurate billing data
+- **Improved:** GitHub auto-updater now prefers custom release assets (clean zips) over GitHub zipballs
+- **Improved:** Added GitHub Actions release workflow for automated release packaging
 
-### 1.1.1
+### 1.1.2
 - **New:** Custom Instructions field to add personalized instructions to the AI prompt
 
 ### 1.1.0
@@ -92,5 +95,4 @@ Yes. Your API key stays server-side.
 - Support for Classic Editor and Gutenberg
 - GitHub auto-updates
 - Multilingual support
-
 
