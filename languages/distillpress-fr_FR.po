@@ -2,10 +2,10 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: DistillPress 1.1.2\n"
+"Project-Id-Version: DistillPress 1.2.0\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
 "POT-Creation-Date: 2025-12-28T17:00:00+00:00\n"
-"PO-Revision-Date: 2025-12-28 23:01+0100\n"
+"PO-Revision-Date: 2025-12-29 14:53+0100\n"
 "Last-Translator: guilamu\n"
 "Language-Team: French\n"
 "Language: fr_FR\n"
@@ -529,3 +529,35 @@ msgstr "Ajoutez des instructions personnalisées au prompt IA (1-2 phrases). Cel
 #: distillpress.php
 msgid "Additional instructions:"
 msgstr "Instructions supplémentaires :"
+
+#: includes/class-admin-settings.php
+msgid "API Request Log (Last 10)"
+msgstr "Journal des requêtes API (10 dernières)"
+
+#: includes/class-admin-settings.php
+msgid "No API requests logged yet."
+msgstr "Aucune requête API enregistrée."
+
+#: includes/class-admin-settings.php
+msgid "Date/Time"
+msgstr "Date/Heure"
+
+#: includes/class-admin-settings.php
+msgid "Action"
+msgstr "Action"
+
+#: includes/class-admin-settings.php
+msgid "Model"
+msgstr "Modèle"
+
+#: includes/class-admin-settings.php
+msgid "Points"
+msgstr "Points"
+
+#: includes/class-admin-settings.php
+msgid "Tokens"
+msgstr "Jetons"
+
+#: includes/class-admin-settings.php
+msgid "N/A"
+msgstr "N/D"

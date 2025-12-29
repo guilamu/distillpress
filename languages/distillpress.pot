@@ -2,7 +2,7 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: DistillPress 1.0.0\n"
+"Project-Id-Version: DistillPress 1.2.0\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
 "POT-Creation-Date: 2025-12-28T17:00:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -510,4 +510,36 @@ msgstr ""
 
 #: includes/class-meta-box.php
 msgid "settings"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "API Request Log (Last 10)"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "No API requests logged yet."
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Date/Time"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Action"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Model"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Points"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Tokens"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "N/A"
 msgstr ""
