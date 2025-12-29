@@ -283,9 +283,12 @@
    ========================================================================== */
 
 @keyframes distillpress-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.5;
     }
@@ -293,4 +296,72 @@
 
 .distillpress-btn[disabled] .distillpress-btn-loading {
     animation: distillpress-pulse 1.5s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   Button Margin Fix for Meta Box
+   ========================================================================== */
+
+#distillpress-auto-categorize {
+    margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Points Log Accordion (Settings Page)
+   ========================================================================== */
+
+.distillpress-points-log {
+    margin-top: 20px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.distillpress-points-log summary {
+    padding: 12px 15px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #1d2327;
+    background: #f6f7f7;
+    border-radius: 3px 3px 0 0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.distillpress-points-log summary::-webkit-details-marker {
+    display: none;
+}
+
+.distillpress-points-log summary::before {
+    content: "▶";
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+.distillpress-points-log[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.distillpress-points-log[open] summary {
+    border-bottom: 1px solid #c3c4c7;
+    border-radius: 3px 3px 0 0;
+}
+
+.distillpress-points-log-content {
+    padding: 15px;
+}
+
+.distillpress-points-log-content .widefat {
+    margin: 0;
+}
+
+.distillpress-points-log-content .widefat td,
+.distillpress-points-log-content .widefat th {
+    padding: 8px 10px;
+}
+
+.distillpress-points-log-content .widefat td small {
+    color: #787c82;
 }
