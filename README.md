@@ -96,6 +96,9 @@ Yes. Your API key stays server-side.
 - GitHub auto-updates
 - Multilingual support
 
+---
+
 <p align="center">
   Made with love for the WordPress community
 </p>
+
