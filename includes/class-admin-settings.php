@@ -272,6 +272,8 @@ class DistillPress_Admin_Settings
 				submit_button(__('Save Settings', 'distillpress'));
 				?>
 			</form>
+
+			<?php self::render_points_log_accordion(); ?>
 		</div>
 		<?php
 	}
@@ -473,6 +475,66 @@ class DistillPress_Admin_Settings
 		<p class="description">
 			<?php esc_html_e('Add custom instructions to the AI prompt (1-2 sentences). These will be appended to the system prompt.', 'distillpress'); ?>
 		</p>
+		<?php
+	}
+
+	/**
+	 * Render the points log accordion.
+	 */
+	public static function render_points_log_accordion()
+	{
+		$log = DistillPress_POE_API_Service::get_request_log();
+		?>
+		<details class="distillpress-points-log">
+			<summary><?php esc_html_e('API Request Log (Last 10)', 'distillpress'); ?></summary>
+			<div class="distillpress-points-log-content">
+				<?php if (empty($log)): ?>
+					<p class="description"><?php esc_html_e('No API requests logged yet.', 'distillpress'); ?></p>
+				<?php else: ?>
+					<table class="widefat striped">
+						<thead>
+							<tr>
+								<th><?php esc_html_e('Date/Time', 'distillpress'); ?></th>
+								<th><?php esc_html_e('Action', 'distillpress'); ?></th>
+								<th><?php esc_html_e('Model', 'distillpress'); ?></th>
+								<th><?php esc_html_e('Points', 'distillpress'); ?></th>
+								<th><?php esc_html_e('Tokens', 'distillpress'); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ($log as $entry): ?>
+								<tr>
+									<td><?php echo esc_html($entry['timestamp']); ?></td>
+									<td><?php echo esc_html(ucwords(str_replace('_', ' ', $entry['action_type']))); ?></td>
+									<td><?php echo esc_html($entry['model']); ?></td>
+									<td>
+										<?php
+										if (!empty($entry['cost_points'])) {
+											echo esc_html($entry['cost_points']);
+										} else {
+											esc_html_e('N/A', 'distillpress');
+										}
+										?>
+									</td>
+									<td>
+										<?php
+										if (null !== $entry['total_tokens']) {
+											echo esc_html($entry['total_tokens']);
+											if (null !== $entry['prompt_tokens'] && null !== $entry['completion_tokens']) {
+												echo ' <small>(' . esc_html($entry['prompt_tokens']) . ' + ' . esc_html($entry['completion_tokens']) . ')</small>';
+											}
+										} else {
+											esc_html_e('N/A', 'distillpress');
+										}
+										?>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				<?php endif; ?>
+			</div>
+		</details>
 		<?php
 	}
 }
