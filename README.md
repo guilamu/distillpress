@@ -65,7 +65,30 @@ add_filter( 'distillpress_supported_post_types', function( $post_types ) {
 ### Is my API key secure?
 Yes. Your API key stays server-side.
 
+## Project Structure
+```
+.
+├── distillpress.php              # Main plugin file
+├── uninstall.php                 # Cleanup on uninstall
+├── README.md
+├── admin
+│   ├── css
+│   │   └── admin.css             # Admin styles (settings, meta box, log)
+│   └── js
+│       └── admin.js              # Frontend logic (AJAX, UI interactions)
+├── includes
+│   ├── class-admin-settings.php  # Settings page & API request log
+│   ├── class-github-updater.php  # GitHub auto-updates
+│   ├── class-meta-box.php        # Editor meta box (summary, teaser, categories)
+│   └── class-poe-api-service.php # POE API client & points tracking
+└── languages
+    ├── distillpress-fr_FR.mo     # French translation (binary)
+    ├── distillpress-fr_FR.po     # French translation (source)
+    └── distillpress.pot          # Translation template
+```
+
 ## Changelog
+
 
 ### 1.2.0
 - **New:** API Request Log now includes a "Points" column showing actual POE credits consumed
