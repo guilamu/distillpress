@@ -35,6 +35,7 @@ jobs:
                     --exclude='package*.json' \
                     --exclude='node_modules' \
                     --exclude='.DS_Store' \
+                    --exclude='screenshot*.*' \
                     ./ build/distillpress/
           
           # Include README.md (useful for users)
