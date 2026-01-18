@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE API. Distill your content to its essence.
- * Version:           1.2.0
+ * Version:           1.3.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.2.0');
+define('DISTILLPRESS_VERSION', '1.3.0');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -570,3 +570,43 @@ function distillpress()
 
 // Initialize
 distillpress();
+
+/**
+ * Register with Guilamu Bug Reporter
+ */
+add_action('plugins_loaded', function() {
+    if (class_exists('Guilamu_Bug_Reporter')) {
+        Guilamu_Bug_Reporter::register(array(
+            'slug'        => 'distillpress',
+            'name'        => 'DistillPress',
+            'version'     => DISTILLPRESS_VERSION,
+            'github_repo' => 'guilamu/distillpress',
+        ));
+    }
+}, 20);
+
+/**
+ * Add 'Report a Bug' link to plugin row meta.
+ *
+ * @param array  $links Plugin row meta links.
+ * @param string $file  Plugin file path.
+ * @return array Modified links.
+ */
+function distillpress_plugin_row_meta($links, $file) {
+    if (DISTILLPRESS_BASENAME !== $file) {
+        return $links;
+    }
+
+    if (class_exists('Guilamu_Bug_Reporter')) {
+        $links[] = sprintf(
+            '<a href="#" class="guilamu-bug-report-btn" data-plugin-slug="distillpress" data-plugin-name="%s">%s</a>',
+            esc_attr__('DistillPress', 'distillpress'),
+            esc_html__('🐛 Report a Bug', 'distillpress')
+        );
+    } else {
+        $links[] = '<a href="https://github.com/guilamu/guilamu-bug-reporter/releases" target="_blank">🐛 Report a Bug (install Bug Reporter)</a>';
+    }
+
+    return $links;
+}
+add_filter('plugin_row_meta', 'distillpress_plugin_row_meta', 10, 2);
