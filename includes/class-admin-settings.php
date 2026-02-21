@@ -51,11 +51,41 @@ class DistillPress_Admin_Settings
 		// Register settings
 		register_setting(
 			'distillpress_settings',
+			'distillpress_api_provider',
+			array(
+				'type' => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default' => 'poe',
+			)
+		);
+
+		register_setting(
+			'distillpress_settings',
 			'distillpress_api_key',
 			array(
 				'type' => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 				'default' => '',
+			)
+		);
+
+		register_setting(
+			'distillpress_settings',
+			'distillpress_gemini_api_key',
+			array(
+				'type' => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default' => '',
+			)
+		);
+
+		register_setting(
+			'distillpress_settings',
+			'distillpress_gemini_model',
+			array(
+				'type' => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default' => 'gemini-flash-latest',
 			)
 		);
 
@@ -142,23 +172,47 @@ class DistillPress_Admin_Settings
 		// API Settings Section
 		add_settings_section(
 			'distillpress_api_section',
-			__('POE API Settings', 'distillpress'),
+			__('API Settings', 'distillpress'),
 			array(__CLASS__, 'render_api_section'),
 			'distillpress'
 		);
 
 		add_settings_field(
+			'distillpress_api_provider',
+			__('API Provider', 'distillpress'),
+			array(__CLASS__, 'render_api_provider_field'),
+			'distillpress',
+			'distillpress_api_section'
+		);
+
+		add_settings_field(
 			'distillpress_api_key',
-			__('API Key', 'distillpress'),
+			__('POE API Key', 'distillpress'),
 			array(__CLASS__, 'render_api_key_field'),
 			'distillpress',
 			'distillpress_api_section'
 		);
 
 		add_settings_field(
+			'distillpress_gemini_api_key',
+			__('Gemini API Key', 'distillpress'),
+			array(__CLASS__, 'render_gemini_api_key_field'),
+			'distillpress',
+			'distillpress_api_section'
+		);
+
+		add_settings_field(
 			'distillpress_model',
-			__('AI Model', 'distillpress'),
+			__('POE Model', 'distillpress'),
 			array(__CLASS__, 'render_model_field'),
+			'distillpress',
+			'distillpress_api_section'
+		);
+
+		add_settings_field(
+			'distillpress_gemini_model',
+			__('Gemini Model', 'distillpress'),
+			array(__CLASS__, 'render_gemini_model_field'),
 			'distillpress',
 			'distillpress_api_section'
 		);
@@ -246,19 +300,34 @@ class DistillPress_Admin_Settings
 		}
 
 		// Check if API key is defined in wp-config.php
-		$api_key_from_constant = defined('DISTILLPRESS_POE_API_KEY');
+		$poe_key_from_constant = defined('DISTILLPRESS_POE_API_KEY');
+		$gemini_key_from_constant = defined('DISTILLPRESS_GEMINI_API_KEY');
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html(get_admin_page_title()); ?></h1>
 
-			<?php if ($api_key_from_constant): ?>
+			<?php if ($poe_key_from_constant): ?>
 				<div class="notice notice-info">
 					<p>
 						<?php
 						printf(
 							/* translators: %s: constant name */
-							esc_html__('Your API key is defined in wp-config.php using the %s constant.', 'distillpress'),
+							esc_html__('Your POE API key is defined in wp-config.php using the %s constant.', 'distillpress'),
 							'<code>DISTILLPRESS_POE_API_KEY</code>'
+						);
+						?>
+					</p>
+				</div>
+			<?php endif; ?>
+
+			<?php if ($gemini_key_from_constant): ?>
+				<div class="notice notice-info">
+					<p>
+						<?php
+						printf(
+							/* translators: %s: constant name */
+							esc_html__('Your Gemini API key is defined in wp-config.php using the %s constant.', 'distillpress'),
+							'<code>DISTILLPRESS_GEMINI_API_KEY</code>'
 						);
 						?>
 					</p>
@@ -283,7 +352,28 @@ class DistillPress_Admin_Settings
 	 */
 	public static function render_api_section()
 	{
-		echo '<p>' . esc_html__('Configure your POE API connection settings.', 'distillpress') . '</p>';
+		echo '<p>' . esc_html__('Choose your AI provider and configure the connection settings.', 'distillpress') . '</p>';
+	}
+
+	/**
+	 * Render API provider selector field.
+	 */
+	public static function render_api_provider_field()
+	{
+		$current_provider = get_option('distillpress_api_provider', 'poe');
+		?>
+		<select id="distillpress_api_provider" name="distillpress_api_provider">
+			<option value="poe" <?php selected($current_provider, 'poe'); ?>>
+				<?php esc_html_e('POE', 'distillpress'); ?>
+			</option>
+			<option value="gemini" <?php selected($current_provider, 'gemini'); ?>>
+				<?php esc_html_e('Google Gemini', 'distillpress'); ?>
+			</option>
+		</select>
+		<p class="description">
+			<?php esc_html_e('Select which AI provider to use for generating summaries and categories.', 'distillpress'); ?>
+		</p>
+		<?php
 	}
 
 	/**
@@ -332,12 +422,50 @@ class DistillPress_Admin_Settings
 	}
 
 	/**
+	 * Render Gemini API key field.
+	 */
+	public static function render_gemini_api_key_field()
+	{
+		$api_key_from_constant = defined('DISTILLPRESS_GEMINI_API_KEY');
+		$api_key = get_option('distillpress_gemini_api_key', '');
+
+		if ($api_key_from_constant) {
+			?>
+			<input type="text" value="<?php echo esc_attr(str_repeat('•', 32)); ?>" class="regular-text" disabled>
+			<p class="description">
+				<?php esc_html_e('Gemini API key is defined in wp-config.php and cannot be changed here.', 'distillpress'); ?>
+			</p>
+			<?php
+		} else {
+			?>
+			<input type="password" id="distillpress_gemini_api_key" name="distillpress_gemini_api_key" value="<?php echo esc_attr($api_key); ?>"
+				class="regular-text" autocomplete="off">
+			<button type="button" class="button" id="distillpress-toggle-gemini-api-key">
+				<?php esc_html_e('Show', 'distillpress'); ?>
+			</button>
+			<p class="description">
+				<?php
+				printf(
+					/* translators: %s: link to Google AI Studio */
+					esc_html__('Enter your Gemini API key. Get it at %s.', 'distillpress'),
+					'<a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>'
+				);
+				?>
+			</p>
+			<?php
+		}
+	}
+
+	/**
 	 * Render model selection field.
 	 */
 	public static function render_model_field()
 	{
 		$current_model = get_option('distillpress_model', 'gpt-4o-mini');
-		$api_key = DistillPress::get_api_key();
+		$api_key = get_option('distillpress_api_key', '');
+		if (defined('DISTILLPRESS_POE_API_KEY')) {
+			$api_key = DISTILLPRESS_POE_API_KEY;
+		}
 		?>
 		<select id="distillpress_model" name="distillpress_model" class="regular-text">
 			<?php if (empty($api_key)): ?>
@@ -355,7 +483,28 @@ class DistillPress_Admin_Settings
 			<span class="spinner is-active" style="float: none; margin-top: 0;"></span>
 		</span>
 		<p class="description">
-			<?php esc_html_e('Select the AI model to use. Click "Refresh Models" to load available models.', 'distillpress'); ?>
+			<?php esc_html_e('Select the AI model to use. Click "Refresh Models" to load available models from POE.', 'distillpress'); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render Gemini model selection field.
+	 */
+	public static function render_gemini_model_field()
+	{
+		$current_model = get_option('distillpress_gemini_model', 'gemini-flash-latest');
+		$models = DistillPress_Gemini_API_Service::get_models();
+		?>
+		<select id="distillpress_gemini_model" name="distillpress_gemini_model" class="regular-text">
+			<?php foreach ($models as $model): ?>
+				<option value="<?php echo esc_attr($model['id']); ?>" <?php selected($current_model, $model['id']); ?>>
+					<?php echo esc_html($model['name']); ?>
+				</option>
+			<?php endforeach; ?>
+		</select>
+		<p class="description">
+			<?php esc_html_e('Select the Gemini model to use. Flash is faster and cheaper; Pro is more capable.', 'distillpress'); ?>
 		</p>
 		<?php
 	}

@@ -1,6 +1,6 @@
 # DistillPress
 
-AI-powered article summarization, teaser generation, and automatic category selection using the POE API. Distill your content to its essence and hook readers in one pass.
+AI-powered article summarization, teaser generation, and automatic category selection using POE or Google Gemini API. Distill your content to its essence and hook readers in one pass.
 
 ## Generate Smart Summaries & Teasers
 - Choose the number of bullet points (1-20)
@@ -18,6 +18,7 @@ AI-powered article summarization, teaser generation, and automatic category sele
 - Works with hierarchical categories
 
 ## Key Features
+- **Multi-Provider:** Choose between POE API and Google Gemini as your AI backend
 - **Factual & Accurate:** Prompts prevent hallucinations; outputs stay grounded in your article
 - **Token-Efficient:** Summary and teaser generated in a single API call
 - **Multilingual:** Works with content in any language; responses mirror the source language
@@ -26,26 +27,40 @@ AI-powered article summarization, teaser generation, and automatic category sele
 - **GitHub Updates:** Automatic updates from GitHub releases
 
 ## Requirements
-- POE API key (get it from poe.com → Settings → API)
+- POE API key (from poe.com → Settings → API) **or** Google Gemini API key (from [aistudio.google.com/apikey](https://aistudio.google.com/apikey))
 - WordPress 6.0 or higher
 - PHP 7.4 or higher
 
 ## Installation
 1. Upload the `distillpress` folder to `/wp-content/plugins/`
 2. Activate the plugin through the **Plugins** menu in WordPress
-3. Go to **Settings → DistillPress** and enter your POE API key
-4. (Optional) Configure default settings for summaries and categories
-5. Use the DistillPress meta box in your post/page editor
+3. Go to **Settings → DistillPress**
+4. Select your **API Provider** (POE or Google Gemini)
+5. Enter your API key for the chosen provider
+6. Select your preferred AI model
+7. (Optional) Configure default settings for summaries and categories
+8. Use the DistillPress meta box in your post/page editor
 
 ## FAQ
-### Where do I get a POE API key?
+### Where do I get an API key?
+**POE:**
 1. Sign in at poe.com
 2. Go to **Settings → API**
 3. Generate a new API key
 4. Paste it into DistillPress settings
 
+**Google Gemini:**
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+2. Create or select a project
+3. Generate an API key
+4. Paste it into DistillPress settings
+
 ### Which AI models are supported?
-All text models available through the POE API, including GPT-4o-mini, Claude, and others. Pick your preferred model in settings.
+**POE:** All text models available through the POE API, including GPT-4o-mini, Claude, and others. Click "Refresh Models" to load your available models.
+
+**Gemini:** Two models are available:
+- `gemini-flash-latest` — Fast and cheap, great for most tasks
+- `gemini-pro-latest` — Most capable, slower
 
 ### Does it work with the Block Editor (Gutenberg)?
 Yes. DistillPress works with both the Classic Editor and Gutenberg.
@@ -63,13 +78,18 @@ add_filter( 'distillpress_supported_post_types', function( $post_types ) {
 ```
 
 ### Is my API key secure?
-Yes. Your API key stays server-side.
+Yes. Your API key stays server-side. You can also define it in `wp-config.php` using `DISTILLPRESS_POE_API_KEY` or `DISTILLPRESS_GEMINI_API_KEY`.
 
 ## Changelog
 
 ### 1.3.0
-- **New:** Integrated Guilamu Bug Reporter support
-- **New:** Added "Report a Bug" link in plugins list
+- **New:** Google Gemini API support as an alternative AI provider
+- **New:** API Provider selector in settings (POE or Google Gemini)
+- **New:** Gemini API key field with show/hide toggle and link to Google AI Studio
+- **New:** Gemini model selector (gemini-flash-latest and gemini-pro-latest)
+- **New:** Support for `DISTILLPRESS_GEMINI_API_KEY` constant in wp-config.php
+- **Improved:** Settings page dynamically shows/hides provider-specific fields
+- **Improved:** Generic error messages no longer reference a specific provider
 
 ### 1.2.0
 - **New:** API Request Log now includes a "Points" column showing actual POE credits consumed

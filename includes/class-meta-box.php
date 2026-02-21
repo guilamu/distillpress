@@ -109,7 +109,7 @@ class DistillPress_Meta_Box
 					<?php
 					printf(
 						/* translators: %s: link to settings page */
-						esc_html__('Please configure your POE API key in the %s.', 'distillpress'),
+						esc_html__('Please configure your API key in the %s.', 'distillpress'),
 						'<a href="' . esc_url(admin_url('options-general.php?page=distillpress')) . '">' . esc_html__('settings', 'distillpress') . '</a>'
 					);
 					?>

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
- * Description:       AI-powered article summarization and automatic category selection using POE API. Distill your content to its essence.
+ * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
  * Version:           1.3.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
@@ -67,6 +67,7 @@ final class DistillPress
 	private function includes()
 	{
 		require_once DISTILLPRESS_PATH . 'includes/class-poe-api-service.php';
+		require_once DISTILLPRESS_PATH . 'includes/class-gemini-api-service.php';
 		require_once DISTILLPRESS_PATH . 'includes/class-github-updater.php';
 		require_once DISTILLPRESS_PATH . 'includes/class-admin-settings.php';
 		require_once DISTILLPRESS_PATH . 'includes/class-meta-box.php';
@@ -195,10 +196,30 @@ final class DistillPress
 	 */
 	public static function get_api_key()
 	{
+		$provider = self::get_api_provider();
+
+		if ('gemini' === $provider) {
+			if (defined('DISTILLPRESS_GEMINI_API_KEY')) {
+				return DISTILLPRESS_GEMINI_API_KEY;
+			}
+			return get_option('distillpress_gemini_api_key', '');
+		}
+
+		// POE provider
 		if (defined('DISTILLPRESS_POE_API_KEY')) {
 			return DISTILLPRESS_POE_API_KEY;
 		}
 		return get_option('distillpress_api_key', '');
+	}
+
+	/**
+	 * Get selected API provider.
+	 *
+	 * @return string Provider ID (poe or gemini).
+	 */
+	public static function get_api_provider()
+	{
+		return get_option('distillpress_api_provider', 'poe');
 	}
 
 	/**
@@ -208,6 +229,12 @@ final class DistillPress
 	 */
 	public static function get_model()
 	{
+		$provider = self::get_api_provider();
+
+		if ('gemini' === $provider) {
+			return get_option('distillpress_gemini_model', 'gemini-flash-latest');
+		}
+
 		return get_option('distillpress_model', 'gpt-4o-mini');
 	}
 
@@ -246,8 +273,10 @@ final class DistillPress
 		$model = self::get_model();
 
 		if (empty($api_key)) {
-			wp_send_json_error(array('message' => __('POE API key not configured. Please go to Settings > DistillPress.', 'distillpress')));
+			wp_send_json_error(array('message' => __('API key not configured. Please go to Settings > DistillPress.', 'distillpress')));
 		}
+
+		$provider = self::get_api_provider();
 
 		// Strip HTML for analysis.
 		$plain_content = wp_strip_all_tags($content);
@@ -341,14 +370,25 @@ final class DistillPress
 			$json_format . "\n\n" .
 			__('Source text:', 'distillpress') . "\n" . $plain_content;
 
-		$result = DistillPress_POE_API_Service::chat_with_system(
-			$api_key,
-			$model,
-			$system_prompt,
-			$user_prompt,
-			0.4,
-			2500
-		);
+		if ('gemini' === $provider) {
+			$result = DistillPress_Gemini_API_Service::chat_with_system(
+				$api_key,
+				$model,
+				$system_prompt,
+				$user_prompt,
+				0.4,
+				2500
+			);
+		} else {
+			$result = DistillPress_POE_API_Service::chat_with_system(
+				$api_key,
+				$model,
+				$system_prompt,
+				$user_prompt,
+				0.4,
+				2500
+			);
+		}
 
 		if (is_wp_error($result)) {
 			wp_send_json_error(array('message' => $result->get_error_message()));
@@ -412,8 +452,10 @@ final class DistillPress
 		$model = self::get_model();
 
 		if (empty($api_key)) {
-			wp_send_json_error(array('message' => __('POE API key not configured. Please go to Settings > DistillPress.', 'distillpress')));
+			wp_send_json_error(array('message' => __('API key not configured. Please go to Settings > DistillPress.', 'distillpress')));
 		}
+
+		$provider = self::get_api_provider();
 
 		// Default category (always applied)
 		$default_category_id = absint(get_option('distillpress_default_category', 0));
@@ -467,14 +509,25 @@ final class DistillPress
 			__('Return ONLY a JSON array of category names. Example: ["Category1", "Category2"]', 'distillpress') . "\n\n" .
 			__('Content to categorize:', 'distillpress') . "\n" . $plain_content;
 
-		$result = DistillPress_POE_API_Service::chat_with_system(
-			$api_key,
-			$model,
-			$system_prompt,
-			$user_prompt,
-			0.2, // Very low temperature for precise selection
-			500
-		);
+		if ('gemini' === $provider) {
+			$result = DistillPress_Gemini_API_Service::chat_with_system(
+				$api_key,
+				$model,
+				$system_prompt,
+				$user_prompt,
+				0.2,
+				500
+			);
+		} else {
+			$result = DistillPress_POE_API_Service::chat_with_system(
+				$api_key,
+				$model,
+				$system_prompt,
+				$user_prompt,
+				0.2, // Very low temperature for precise selection
+				500
+			);
+		}
 
 		if (is_wp_error($result)) {
 			wp_send_json_error(array('message' => $result->get_error_message()));
@@ -542,6 +595,16 @@ final class DistillPress
 			wp_send_json_error(array('message' => __('Permission denied.', 'distillpress')));
 		}
 
+		$provider = isset($_POST['provider']) ? sanitize_text_field(wp_unslash($_POST['provider'])) : self::get_api_provider();
+
+		if ('gemini' === $provider) {
+			// Gemini models are static, no API call needed.
+			$models = DistillPress_Gemini_API_Service::get_models();
+			wp_send_json_success(array('models' => $models));
+			return;
+		}
+
+		// POE: requires API key to fetch models.
 		$api_key = self::get_api_key();
 
 		if (empty($api_key)) {
@@ -570,43 +633,3 @@ function distillpress()
 
 // Initialize
 distillpress();
-
-/**
- * Register with Guilamu Bug Reporter
- */
-add_action('plugins_loaded', function() {
-    if (class_exists('Guilamu_Bug_Reporter')) {
-        Guilamu_Bug_Reporter::register(array(
-            'slug'        => 'distillpress',
-            'name'        => 'DistillPress',
-            'version'     => DISTILLPRESS_VERSION,
-            'github_repo' => 'guilamu/distillpress',
-        ));
-    }
-}, 20);
-
-/**
- * Add 'Report a Bug' link to plugin row meta.
- *
- * @param array  $links Plugin row meta links.
- * @param string $file  Plugin file path.
- * @return array Modified links.
- */
-function distillpress_plugin_row_meta($links, $file) {
-    if (DISTILLPRESS_BASENAME !== $file) {
-        return $links;
-    }
-
-    if (class_exists('Guilamu_Bug_Reporter')) {
-        $links[] = sprintf(
-            '<a href="#" class="guilamu-bug-report-btn" data-plugin-slug="distillpress" data-plugin-name="%s">%s</a>',
-            esc_attr__('DistillPress', 'distillpress'),
-            esc_html__('🐛 Report a Bug', 'distillpress')
-        );
-    } else {
-        $links[] = '<a href="https://github.com/guilamu/guilamu-bug-reporter/releases" target="_blank">🐛 Report a Bug (install Bug Reporter)</a>';
-    }
-
-    return $links;
-}
-add_filter('plugin_row_meta', 'distillpress_plugin_row_meta', 10, 2);

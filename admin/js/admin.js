@@ -92,20 +92,66 @@
             // Copy teaser button
             $(document).on('click', '#distillpress-copy-teaser', this.copyTeaser.bind(this));
 
-            // Toggle API key visibility
+            // Toggle API key visibility (POE)
             $(document).on('click', '#distillpress-toggle-api-key', this.toggleApiKey.bind(this));
 
-            // Refresh models button
+            // Toggle API key visibility (Gemini)
+            $(document).on('click', '#distillpress-toggle-gemini-api-key', this.toggleGeminiApiKey.bind(this));
+
+            // Refresh models button (POE)
             $(document).on('click', '#distillpress-refresh-models', this.refreshModels.bind(this));
+
+            // API provider selector
+            $(document).on('change', '#distillpress_api_provider', this.onProviderChange.bind(this));
         },
 
         /**
          * Initialize settings page specific functionality.
          */
         initSettingsPage: function() {
-            // Auto-load models if API key exists on settings page
-            if ($('#distillpress-refresh-models').length && !$('#distillpress-refresh-models').prop('disabled')) {
+            // Apply initial provider visibility
+            this.applyProviderVisibility();
+
+            // Auto-load models if API key exists on settings page (POE only)
+            var provider = $('#distillpress_api_provider').val() || 'poe';
+            if (provider === 'poe' && $('#distillpress-refresh-models').length && !$('#distillpress-refresh-models').prop('disabled')) {
                 this.refreshModels();
+            }
+        },
+
+        /**
+         * Handle API provider change.
+         */
+        onProviderChange: function() {
+            this.applyProviderVisibility();
+        },
+
+        /**
+         * Show/hide provider-specific settings rows.
+         */
+        applyProviderVisibility: function() {
+            var provider = $('#distillpress_api_provider').val();
+            if (!provider) {
+                return;
+            }
+
+            // POE fields: API key row and model row
+            var $poeKeyRow = $('#distillpress_api_key').closest('tr');
+            var $poeModelRow = $('#distillpress_model').closest('tr');
+            // Gemini fields: API key row and model row
+            var $geminiKeyRow = $('#distillpress_gemini_api_key').closest('tr');
+            var $geminiModelRow = $('#distillpress_gemini_model').closest('tr');
+
+            if (provider === 'gemini') {
+                $poeKeyRow.hide();
+                $poeModelRow.hide();
+                $geminiKeyRow.show();
+                $geminiModelRow.show();
+            } else {
+                $poeKeyRow.show();
+                $poeModelRow.show();
+                $geminiKeyRow.hide();
+                $geminiModelRow.hide();
             }
         },
 
@@ -392,6 +438,26 @@
 
             var $btn = $(e.currentTarget);
             var $input = $('#distillpress_api_key');
+
+            if ($input.attr('type') === 'password') {
+                $input.attr('type', 'text');
+                $btn.text($btn.text().replace('Show', 'Hide'));
+            } else {
+                $input.attr('type', 'password');
+                $btn.text($btn.text().replace('Hide', 'Show'));
+            }
+        },
+
+        /**
+         * Toggle Gemini API key visibility.
+         *
+         * @param {Event} e Click event.
+         */
+        toggleGeminiApiKey: function(e) {
+            e.preventDefault();
+
+            var $btn = $(e.currentTarget);
+            var $input = $('#distillpress_gemini_api_key');
 
             if ($input.attr('type') === 'password') {
                 $input.attr('type', 'text');

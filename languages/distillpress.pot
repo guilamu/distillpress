@@ -1,10 +1,10 @@
-# Copyright (C) 2025 guilamu
+# Copyright (C) 2026 guilamu
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
 "Project-Id-Version: DistillPress 1.3.0\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
-"POT-Creation-Date: 2025-12-28T17:00:00+00:00\n"
+"POT-Creation-Date: 2026-02-21T12:00:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -102,7 +102,7 @@ msgid "Both summary and teaser are disabled in settings."
 msgstr ""
 
 #: distillpress.php
-msgid "POE API key not configured. Please go to Settings > DistillPress."
+msgid "API key not configured. Please go to Settings > DistillPress."
 msgstr ""
 
 #: distillpress.php
@@ -208,6 +208,10 @@ msgid "Source text:"
 msgstr ""
 
 #: distillpress.php
+msgid "Additional instructions:"
+msgstr ""
+
+#: distillpress.php
 msgid "You are a content categorization assistant. Your task is to analyze text and select the most relevant categories from a predefined list. You must:"
 msgstr ""
 
@@ -256,6 +260,19 @@ msgstr ""
 msgid "Please enter your API key first."
 msgstr ""
 
+#: includes/class-gemini-api-service.php
+msgid "Gemini API key is required"
+msgstr ""
+
+#. translators: %d: HTTP status code
+#: includes/class-gemini-api-service.php
+msgid "Gemini API returned status %d"
+msgstr ""
+
+#: includes/class-gemini-api-service.php
+msgid "Invalid Gemini API response"
+msgstr ""
+
 #: includes/class-poe-api-service.php
 msgid "API key is required"
 msgstr ""
@@ -286,15 +303,27 @@ msgid "DistillPress"
 msgstr ""
 
 #: includes/class-admin-settings.php
-msgid "POE API Settings"
+msgid "API Settings"
 msgstr ""
 
 #: includes/class-admin-settings.php
-msgid "API Key"
+msgid "API Provider"
 msgstr ""
 
 #: includes/class-admin-settings.php
-msgid "AI Model"
+msgid "POE API Key"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Gemini API Key"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "POE Model"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Gemini Model"
 msgstr ""
 
 #: includes/class-admin-settings.php
@@ -326,6 +355,10 @@ msgid "Generate teaser paragraphs"
 msgstr ""
 
 #: includes/class-admin-settings.php
+msgid "Custom Instructions"
+msgstr ""
+
+#: includes/class-admin-settings.php
 msgid "Category Settings"
 msgstr ""
 
@@ -339,40 +372,28 @@ msgstr ""
 
 #. translators: %s: constant name
 #: includes/class-admin-settings.php
-msgid "Your API key is defined in wp-config.php using the %s constant."
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "How to Get Your POE API Key"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Go to poe.com and sign in to your account"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Navigate to Settings → API"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Generate a new API key"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Copy the key and paste it in the field above"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Security Tip:"
+msgid "Your POE API key is defined in wp-config.php using the %s constant."
 msgstr ""
 
 #. translators: %s: constant name
 #: includes/class-admin-settings.php
-msgid "For production sites, consider defining your API key in wp-config.php: %s"
+msgid "Your Gemini API key is defined in wp-config.php using the %s constant."
 msgstr ""
 
 #: includes/class-admin-settings.php
-msgid "Configure your POE API connection settings."
+msgid "Choose your AI provider and configure the connection settings."
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "POE"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Google Gemini"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Select which AI provider to use for generating summaries and categories."
 msgstr ""
 
 #: includes/class-admin-settings.php
@@ -396,6 +417,15 @@ msgid "Enter your POE API key. Get it from poe.com → Settings → API."
 msgstr ""
 
 #: includes/class-admin-settings.php
+msgid "Gemini API key is defined in wp-config.php and cannot be changed here."
+msgstr ""
+
+#. translators: %s: link to Google AI Studio
+#: includes/class-admin-settings.php
+msgid "Enter your Gemini API key. Get it at %s."
+msgstr ""
+
+#: includes/class-admin-settings.php
 msgid "Enter API key first"
 msgstr ""
 
@@ -404,7 +434,11 @@ msgid "Refresh Models"
 msgstr ""
 
 #: includes/class-admin-settings.php
-msgid "Select the AI model to use. Click \"Refresh Models\" to load available models."
+msgid "Select the AI model to use. Click \"Refresh Models\" to load available models from POE."
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Select the Gemini model to use. Flash is faster and cheaper; Pro is more capable."
 msgstr ""
 
 #: includes/class-admin-settings.php
@@ -433,6 +467,46 @@ msgstr ""
 
 #: includes/class-admin-settings.php
 msgid "This category will always be applied in addition to AI-selected categories."
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Example: Always mention the author name. Use a formal tone."
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Add custom instructions to the AI prompt (1-2 sentences). These will be appended to the system prompt."
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "API Request Log (Last 10)"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "No API requests logged yet."
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Date/Time"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Action"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Model"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Points"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Tokens"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "N/A"
 msgstr ""
 
 #: includes/class-meta-box.php
@@ -505,41 +579,9 @@ msgstr ""
 
 #. translators: %s: link to settings page
 #: includes/class-meta-box.php
-msgid "Please configure your POE API key in the %s."
+msgid "Please configure your API key in the %s."
 msgstr ""
 
 #: includes/class-meta-box.php
 msgid "settings"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "API Request Log (Last 10)"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "No API requests logged yet."
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Date/Time"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Action"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Model"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Points"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "Tokens"
-msgstr ""
-
-#: includes/class-admin-settings.php
-msgid "N/A"
 msgstr ""

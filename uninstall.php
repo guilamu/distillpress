@@ -19,7 +19,10 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 function distillpress_uninstall()
 {
 	// Delete plugin options
+	delete_option('distillpress_api_provider');
 	delete_option('distillpress_api_key');
+	delete_option('distillpress_gemini_api_key');
+	delete_option('distillpress_gemini_model');
 	delete_option('distillpress_model');
 	delete_option('distillpress_default_num_points');
 	delete_option('distillpress_default_reduction_percent');
