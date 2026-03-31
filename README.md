@@ -82,6 +82,14 @@ Yes. Your API key stays server-side. You can also define it in `wp-config.php` u
 
 ## Changelog
 
+### 1.3.1
+- **Improved:** GitHub auto-updater now parses local README.md for plugin details popup (Description, Installation, FAQ, Changelog tabs)
+- **Improved:** "View details" thickbox link added to plugin row meta
+- **Improved:** Update object now includes all required fields (id, slug, plugin, new_version) for full WordPress compatibility
+- **Improved:** CSS injection via admin_head for proper modal styling
+- **Improved:** Markdown tables converted to div/span structures to survive wp_kses sanitization
+- **Added:** Parsedown.php dependency for reliable Markdown-to-HTML conversion
+
 ### 1.3.0
 - **New:** Google Gemini API support as an alternative AI provider
 - **New:** API Provider selector in settings (POE or Google Gemini)

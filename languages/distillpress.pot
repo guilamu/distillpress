@@ -2,7 +2,7 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: DistillPress 1.3.0\n"
+"Project-Id-Version: DistillPress 1.3.1\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
 "POT-Creation-Date: 2026-02-21T12:00:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -299,6 +299,7 @@ msgid "DistillPress Settings"
 msgstr ""
 
 #: includes/class-admin-settings.php
+#: distillpress.php
 msgid "DistillPress"
 msgstr ""
 
@@ -443,6 +444,14 @@ msgstr ""
 
 #: includes/class-admin-settings.php
 msgid "Default number of bullet points for the summary (1-20)."
+msgstr ""
+
+#: distillpress.php
+msgid "More information about DistillPress"
+msgstr ""
+
+#: distillpress.php
+msgid "View details"
 msgstr ""
 
 #: includes/class-admin-settings.php

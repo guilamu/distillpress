@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.3.0
+ * Version:           1.3.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.3.0');
+define('DISTILLPRESS_VERSION', '1.3.1');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -94,6 +94,9 @@ final class DistillPress
 
 		// Add settings link to plugins page
 		add_filter('plugin_action_links_' . DISTILLPRESS_BASENAME, array($this, 'add_settings_link'));
+
+		// Add "View details" link to plugin row meta
+		add_filter('plugin_row_meta', array($this, 'add_view_details_link'), 10, 2);
 	}
 
 	/**
@@ -186,6 +189,33 @@ final class DistillPress
 			__('Settings', 'distillpress')
 		);
 		array_unshift($links, $settings_link);
+		return $links;
+	}
+
+	/**
+	 * Add "View details" link to plugin row meta.
+	 *
+	 * @param array  $links Plugin row meta links.
+	 * @param string $file  Plugin file path.
+	 * @return array Modified links.
+	 */
+	public function add_view_details_link($links, $file)
+	{
+		if (DISTILLPRESS_BASENAME !== $file) {
+			return $links;
+		}
+
+		$links[] = sprintf(
+			'<a href="%s" class="thickbox open-plugin-details-modal" aria-label="%s" data-title="%s">%s</a>',
+			esc_url(self_admin_url(
+				'plugin-install.php?tab=plugin-information&plugin=distillpress'
+				. '&TB_iframe=true&width=772&height=926'
+			)),
+			esc_attr__('More information about DistillPress', 'distillpress'),
+			esc_attr__('DistillPress', 'distillpress'),
+			esc_html__('View details', 'distillpress')
+		);
+
 		return $links;
 	}
 
