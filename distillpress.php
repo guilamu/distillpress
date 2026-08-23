@@ -3,13 +3,13 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.3.2
+ * Version:           1.4.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
  * Author URI:        https://github.com/guilamu
- * License:           GPL v2 or later
- * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * License:           AGPL-3.0-or-later
+ * License URI:       https://www.gnu.org/licenses/agpl-3.0.html
  * Text Domain:       distillpress
  * Domain Path:       /languages
  * Update URI:        https://github.com/guilamu/distillpress/
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.3.2');
+define('DISTILLPRESS_VERSION', '1.4.0');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -31,6 +31,20 @@ define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
  */
 final class DistillPress
 {
+
+	/**
+	 * Model used by default with the POE provider.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_POE_MODEL = 'deepseek-v4-flash';
+
+	/**
+	 * Reasoning effort levels offered in the settings.
+	 *
+	 * @var array
+	 */
+	public const REASONING_LEVELS = array('none', 'low', 'medium', 'high', 'max');
 
 	/**
 	 * Single instance of the class.
@@ -66,6 +80,7 @@ final class DistillPress
 	 */
 	private function includes()
 	{
+		require_once DISTILLPRESS_PATH . 'includes/class-api-service.php';
 		require_once DISTILLPRESS_PATH . 'includes/class-poe-api-service.php';
 		require_once DISTILLPRESS_PATH . 'includes/class-gemini-api-service.php';
 		require_once DISTILLPRESS_PATH . 'includes/class-github-updater.php';
@@ -95,8 +110,30 @@ final class DistillPress
 		// Add settings link to plugins page
 		add_filter('plugin_action_links_' . DISTILLPRESS_BASENAME, array($this, 'add_settings_link'));
 
-		// Add "View details" link to plugin row meta
-		add_filter('plugin_row_meta', array($this, 'add_view_details_link'), 10, 2);
+		// Add "View details" and "Report a Bug" links to plugin row meta
+		add_filter('plugin_row_meta', array($this, 'add_plugin_row_meta'), 10, 2);
+
+		// Register with Guilamu Bug Reporter when it is installed
+		add_action('plugins_loaded', array($this, 'register_bug_reporter'), 20);
+	}
+
+	/**
+	 * Register the plugin with the Guilamu Bug Reporter plugin.
+	 */
+	public function register_bug_reporter()
+	{
+		if (!class_exists('Guilamu_Bug_Reporter')) {
+			return;
+		}
+
+		Guilamu_Bug_Reporter::register(
+			array(
+				'slug' => 'distillpress',
+				'name' => 'DistillPress',
+				'version' => DISTILLPRESS_VERSION,
+				'github_repo' => 'guilamu/distillpress',
+			)
+		);
 	}
 
 	/**
@@ -118,14 +155,11 @@ final class DistillPress
 	 */
 	public function enqueue_admin_assets($hook)
 	{
-		$screen = get_current_screen();
+		// Post editor screens and the plugin settings page only.
+		$allowed_hooks = array('post.php', 'post-new.php', 'settings_page_distillpress');
 
-		// Load on post edit screens and settings page
-		$allowed_screens = array('post', 'page', 'settings_page_distillpress');
-		if (!$screen || !in_array($screen->base, $allowed_screens, true)) {
-			if ('post.php' !== $hook && 'post-new.php' !== $hook && 'settings_page_distillpress' !== $hook) {
-				return;
-			}
+		if (!in_array($hook, $allowed_hooks, true)) {
+			return;
 		}
 
 		wp_enqueue_style(
@@ -160,8 +194,8 @@ final class DistillPress
 				'categories_selected' => __('Categories selected successfully!', 'distillpress'),
 				'no_content' => __('Please add content to your post first.', 'distillpress'),
 				'no_categories' => __('No matching categories found.', 'distillpress'),
-				'copy_summary' => __('Copy summary', 'distillpress'),
-				'copy_teaser' => __('Copy teaser', 'distillpress'),
+				'show' => __('Show', 'distillpress'),
+				'hide' => __('Hide', 'distillpress'),
 				'copied' => __('Copied!', 'distillpress'),
 				'no_teaser' => __('No teaser generated.', 'distillpress'),
 				'no_summary' => __('No summary generated.', 'distillpress'),
@@ -196,13 +230,13 @@ final class DistillPress
 	}
 
 	/**
-	 * Add "View details" link to plugin row meta.
+	 * Add "View details" and "Report a Bug" links to plugin row meta.
 	 *
 	 * @param array  $links Plugin row meta links.
 	 * @param string $file  Plugin file path.
 	 * @return array Modified links.
 	 */
-	public function add_view_details_link($links, $file)
+	public function add_plugin_row_meta($links, $file)
 	{
 		if (DISTILLPRESS_BASENAME !== $file) {
 			return $links;
@@ -219,44 +253,43 @@ final class DistillPress
 			esc_html__('View details', 'distillpress')
 		);
 
+		if (class_exists('Guilamu_Bug_Reporter')) {
+			$links[] = sprintf(
+				'<a href="#" class="guilamu-bug-report-btn" data-plugin-slug="distillpress" data-plugin-name="%s">%s</a>',
+				esc_attr__('DistillPress', 'distillpress'),
+				esc_html__('🐛 Report a Bug', 'distillpress')
+			);
+		} else {
+			$links[] = sprintf(
+				'<a href="https://github.com/guilamu/guilamu-bug-reporter/releases" target="_blank">%s</a>',
+				esc_html__('🐛 Report a Bug (install Bug Reporter)', 'distillpress')
+			);
+		}
+
 		return $links;
 	}
 
 	/**
-	 * Get API key from settings or constant.
+	 * Get an API key from the wp-config.php constant or the settings.
 	 *
+	 * @param string|null $provider Provider ID, defaults to the selected one.
 	 * @return string API key.
 	 */
-	public static function get_api_key()
+	public static function get_api_key($provider = null)
 	{
-		$provider = self::get_api_provider();
+		if (null === $provider) {
+			$provider = self::get_api_provider();
+		}
 
 		if ('gemini' === $provider) {
-			if (defined('DISTILLPRESS_GEMINI_API_KEY')) {
-				return DISTILLPRESS_GEMINI_API_KEY;
-			}
-			return get_option('distillpress_gemini_api_key', '');
+			return defined('DISTILLPRESS_GEMINI_API_KEY')
+				? DISTILLPRESS_GEMINI_API_KEY
+				: get_option('distillpress_gemini_api_key', '');
 		}
 
-		// POE provider
-		if (defined('DISTILLPRESS_POE_API_KEY')) {
-			return DISTILLPRESS_POE_API_KEY;
-		}
-		return get_option('distillpress_api_key', '');
-	}
-
-	/**
-	 * Get the POE API key, whichever provider is currently selected.
-	 *
-	 * @return string POE API key.
-	 */
-	public static function get_poe_api_key()
-	{
-		if (defined('DISTILLPRESS_POE_API_KEY')) {
-			return DISTILLPRESS_POE_API_KEY;
-		}
-
-		return get_option('distillpress_api_key', '');
+		return defined('DISTILLPRESS_POE_API_KEY')
+			? DISTILLPRESS_POE_API_KEY
+			: get_option('distillpress_api_key', '');
 	}
 
 	/**
@@ -282,7 +315,57 @@ final class DistillPress
 			return get_option('distillpress_gemini_model', 'gemini-flash-latest');
 		}
 
-		return get_option('distillpress_model', 'gpt-4o-mini');
+		return get_option('distillpress_model', self::DEFAULT_POE_MODEL);
+	}
+
+	/**
+	 * Get the configured reasoning effort.
+	 *
+	 * @return string One of the REASONING_LEVELS values, or an empty string to
+	 *                leave the model default untouched.
+	 */
+	public static function get_reasoning_effort()
+	{
+		$effort = (string) get_option('distillpress_reasoning_effort', '');
+
+		return in_array($effort, self::REASONING_LEVELS, true) ? $effort : '';
+	}
+
+	/**
+	 * Send a chat completion to the configured provider.
+	 *
+	 * @param string $system_prompt System instructions.
+	 * @param string $user_prompt   User message.
+	 * @param float  $temperature   Temperature (0.0-1.0).
+	 * @param int    $max_tokens    Maximum tokens in response.
+	 * @param string $action        Action name recorded in the request log.
+	 * @return string|WP_Error Response content or error.
+	 */
+	public static function request_completion($system_prompt, $user_prompt, $temperature, $max_tokens, $action)
+	{
+		$api_key = self::get_api_key();
+
+		if (empty($api_key)) {
+			return new WP_Error(
+				'missing_api_key',
+				__('API key not configured. Please go to Settings > DistillPress.', 'distillpress')
+			);
+		}
+
+		$service = 'gemini' === self::get_api_provider()
+			? 'DistillPress_Gemini_API_Service'
+			: 'DistillPress_POE_API_Service';
+
+		return call_user_func(
+			array($service, 'chat_with_system'),
+			$api_key,
+			self::get_model(),
+			$system_prompt,
+			$user_prompt,
+			$temperature,
+			$max_tokens,
+			$action
+		);
 	}
 
 	/**
@@ -316,15 +399,6 @@ final class DistillPress
 			wp_send_json_error(array('message' => __('No content provided.', 'distillpress')));
 		}
 
-		$api_key = self::get_api_key();
-		$model = self::get_model();
-
-		if (empty($api_key)) {
-			wp_send_json_error(array('message' => __('API key not configured. Please go to Settings > DistillPress.', 'distillpress')));
-		}
-
-		$provider = self::get_api_provider();
-
 		// Strip HTML for analysis.
 		$plain_content = wp_strip_all_tags($content);
 		$content_length = mb_strlen($plain_content);
@@ -343,31 +417,37 @@ final class DistillPress
 		}
 
 		// Build system prompt based on what's enabled.
-		$system_instructions = array(
-			__('1. ONLY use information explicitly stated in the source text', 'distillpress'),
-			__('2. NEVER add interpretations, opinions, or external knowledge', 'distillpress'),
-			__('3. NEVER hallucinate or invent information not present in the text', 'distillpress'),
+		$rules = array(
+			__('ONLY use information explicitly stated in the source text', 'distillpress'),
+			__('NEVER add interpretations, opinions, or external knowledge', 'distillpress'),
+			__('NEVER hallucinate or invent information not present in the text', 'distillpress'),
 		);
 
 		if ($enable_summary) {
-			$system_instructions[] = __('4. Use neutral, objective language for the summary', 'distillpress');
+			$rules[] = __('Use neutral, objective language for the summary', 'distillpress');
 		}
 		if ($enable_teaser) {
-			$system_instructions[] = __('5. Make the teaser engaging but still factual', 'distillpress');
+			$rules[] = __('Make the teaser engaging but still factual', 'distillpress');
 		}
-		$system_instructions[] = __('6. Preserve the original meaning accurately', 'distillpress');
-		$system_instructions[] = __('7. Respond in the SAME LANGUAGE as the source text', 'distillpress');
+		$rules[] = __('Preserve the original meaning accurately', 'distillpress');
+		$rules[] = __('Respond in the SAME LANGUAGE as the source text', 'distillpress');
 
 		// Determine JSON format instruction.
 		if ($enable_summary && $enable_teaser) {
-			$system_instructions[] = __('8. Return your response in JSON format with "summary" and "teaser" fields', 'distillpress');
+			$rules[] = __('Return your response in JSON format with "summary" and "teaser" fields', 'distillpress');
 			$json_format = '{"summary": "• Point 1\n• Point 2\n• Point 3", "teaser": "Your teaser paragraph here."}';
 		} elseif ($enable_summary) {
-			$system_instructions[] = __('8. Return your response in JSON format with "summary" field', 'distillpress');
+			$rules[] = __('Return your response in JSON format with "summary" field', 'distillpress');
 			$json_format = '{"summary": "• Point 1\n• Point 2\n• Point 3"}';
 		} else {
-			$system_instructions[] = __('8. Return your response in JSON format with "teaser" field', 'distillpress');
+			$rules[] = __('Return your response in JSON format with "teaser" field', 'distillpress');
 			$json_format = '{"teaser": "Your teaser paragraph here."}';
+		}
+
+		// Number the rules here so the list stays continuous whatever is enabled.
+		$system_instructions = array();
+		foreach ($rules as $index => $rule) {
+			$system_instructions[] = ($index + 1) . '. ' . $rule;
 		}
 
 		$system_prompt = __('You are a precise summarization assistant. Your task is to create factual content based EXCLUSIVELY on the provided text. You must:', 'distillpress') . "\n\n" .
@@ -417,32 +497,14 @@ final class DistillPress
 			$json_format . "\n\n" .
 			__('Source text:', 'distillpress') . "\n" . $plain_content;
 
-		if ('gemini' === $provider) {
-			$result = DistillPress_Gemini_API_Service::chat_with_system(
-				$api_key,
-				$model,
-				$system_prompt,
-				$user_prompt,
-				0.4,
-				2500
-			);
-		} else {
-			$result = DistillPress_POE_API_Service::chat_with_system(
-				$api_key,
-				$model,
-				$system_prompt,
-				$user_prompt,
-				0.4,
-				2500
-			);
-		}
+		$result = self::request_completion($system_prompt, $user_prompt, 0.4, 2500, 'summary');
 
 		if (is_wp_error($result)) {
 			wp_send_json_error(array('message' => $result->get_error_message()));
 		}
 
 		// Parse the JSON response.
-		$parsed = DistillPress_POE_API_Service::extract_json_from_response($result);
+		$parsed = DistillPress_API_Service::extract_json_from_response($result);
 
 		$summary = '';
 		$teaser = '';
@@ -494,15 +556,6 @@ final class DistillPress
 		if (empty($content)) {
 			wp_send_json_error(array('message' => __('No content provided.', 'distillpress')));
 		}
-
-		$api_key = self::get_api_key();
-		$model = self::get_model();
-
-		if (empty($api_key)) {
-			wp_send_json_error(array('message' => __('API key not configured. Please go to Settings > DistillPress.', 'distillpress')));
-		}
-
-		$provider = self::get_api_provider();
 
 		// Default category (always applied)
 		$default_category_id = absint(get_option('distillpress_default_category', 0));
@@ -556,32 +609,15 @@ final class DistillPress
 			__('Return ONLY a JSON array of category names. Example: ["Category1", "Category2"]', 'distillpress') . "\n\n" .
 			__('Content to categorize:', 'distillpress') . "\n" . $plain_content;
 
-		if ('gemini' === $provider) {
-			$result = DistillPress_Gemini_API_Service::chat_with_system(
-				$api_key,
-				$model,
-				$system_prompt,
-				$user_prompt,
-				0.2,
-				500
-			);
-		} else {
-			$result = DistillPress_POE_API_Service::chat_with_system(
-				$api_key,
-				$model,
-				$system_prompt,
-				$user_prompt,
-				0.2, // Very low temperature for precise selection
-				500
-			);
-		}
+		// Very low temperature for precise selection.
+		$result = self::request_completion($system_prompt, $user_prompt, 0.2, 500, 'categories');
 
 		if (is_wp_error($result)) {
 			wp_send_json_error(array('message' => $result->get_error_message()));
 		}
 
 		// Parse the JSON response
-		$selected_categories = DistillPress_POE_API_Service::extract_json_from_response($result);
+		$selected_categories = DistillPress_API_Service::extract_json_from_response($result);
 
 		if (!is_array($selected_categories)) {
 			wp_send_json_error(array('message' => __('Failed to parse category response.', 'distillpress')));
@@ -656,7 +692,7 @@ final class DistillPress
 		$force = isset($_POST['force']) && '1' === (string) $_POST['force'];
 		$latest_only = !isset($_POST['show_all']) || '1' !== (string) $_POST['show_all'];
 
-		$api_key = self::get_poe_api_key();
+		$api_key = self::get_api_key('poe');
 
 		// Use the key typed in the form so models can be listed before saving.
 		if (!defined('DISTILLPRESS_POE_API_KEY') && !empty($_POST['api_key'])) {
@@ -667,7 +703,7 @@ final class DistillPress
 			wp_send_json_error(array('message' => __('Please enter your API key first.', 'distillpress')));
 		}
 
-		$models = DistillPress_POE_API_Service::get_models($api_key, false, $latest_only, $force);
+		$models = DistillPress_POE_API_Service::get_models($api_key, $latest_only, $force);
 
 		if (is_wp_error($models)) {
 			wp_send_json_error(array('message' => $models->get_error_message()));

@@ -87,13 +87,6 @@ class DistillPress_GitHub_Updater
 	 */
 	private const REQUIRES_PHP = '7.4';
 
-	/**
-	 * Text domain for translations.
-	 *
-	 * @var string
-	 */
-	private const TEXT_DOMAIN = 'distillpress';
-
 	// =========================================================================
 	// CACHE SETTINGS
 	// =========================================================================
@@ -132,8 +125,101 @@ class DistillPress_GitHub_Updater
 	{
 		add_filter('update_plugins_github.com', array(self::class, 'check_for_update'), 10, 4);
 		add_filter('plugins_api', array(self::class, 'plugin_info'), 20, 3);
+		add_filter('plugins_api_result', array(self::class, 'finalize_plugin_info'), PHP_INT_MAX, 3);
 		add_filter('upgrader_source_selection', array(self::class, 'fix_folder_name'), 10, 4);
 		add_action('admin_head', array(self::class, 'plugin_info_css'));
+	}
+
+	/**
+	 * Rebuild the final plugin information object after all earlier filters.
+	 *
+	 * Some sites run additional `plugins_api_result` filters that mutate or
+	 * strip fields such as `sections`. Returning a fresh object at the highest
+	 * practical priority ensures WordPress core receives the expected shape.
+	 *
+	 * @param false|object|array $result Plugin API result.
+	 * @param string             $action Requested action.
+	 * @param object             $args   API arguments.
+	 * @return false|object|array
+	 */
+	public static function finalize_plugin_info($result, $action, $args)
+	{
+		if (!self::is_plugin_information_api_request($action, $args)) {
+			return $result;
+		}
+
+		return self::get_safe_plugin_info_result();
+	}
+
+	/**
+	 * Check whether the current API request is asking for this plugin.
+	 *
+	 * @param string $action Requested action.
+	 * @param mixed  $args   API arguments.
+	 * @return bool
+	 */
+	private static function is_plugin_information_api_request($action, $args): bool
+	{
+		return 'plugin_information' === $action
+			&& is_object($args)
+			&& isset($args->slug)
+			&& self::PLUGIN_SLUG === $args->slug;
+	}
+
+	/**
+	 * Get the active plugin file path relative to the plugins directory.
+	 *
+	 * @return string
+	 */
+	private static function get_plugin_file(): string
+	{
+		if (defined('DISTILLPRESS_BASENAME') && is_string(DISTILLPRESS_BASENAME) && '' !== DISTILLPRESS_BASENAME) {
+			return DISTILLPRESS_BASENAME;
+		}
+
+		return self::PLUGIN_FILE;
+	}
+
+	/**
+	 * Get the active plugin directory relative to the plugins directory.
+	 *
+	 * @return string
+	 */
+	private static function get_plugin_directory(): string
+	{
+		return dirname(self::get_plugin_file());
+	}
+
+	/**
+	 * Build the plugin information object once and return a fresh clone.
+	 *
+	 * @return stdClass
+	 */
+	private static function get_safe_plugin_info_result(): stdClass
+	{
+		static $plugin_info = null;
+
+		if ($plugin_info instanceof stdClass) {
+			return clone $plugin_info;
+		}
+
+		try {
+			$plugin_info = self::build_plugin_info_result();
+		} catch (Throwable $throwable) {
+			if (defined('WP_DEBUG') && WP_DEBUG) {
+				error_log(sprintf(
+					'%s plugin details fallback: %s in %s:%d',
+					self::PLUGIN_NAME,
+					$throwable->getMessage(),
+					$throwable->getFile(),
+					$throwable->getLine()
+				));
+			}
+
+			$plugin_info = self::build_fallback_plugin_info_result();
+		}
+
+		return clone $plugin_info;
 	}
 
 	/**
@@ -209,7 +295,7 @@ class DistillPress_GitHub_Updater
 				if (
 					isset($asset['browser_download_url']) &&
 					isset($asset['name']) &&
-					str_ends_with($asset['name'], '.zip')
+					substr($asset['name'], -4) === '.zip'
 				) {
 					return $asset['browser_download_url'];
 				}
@@ -218,6 +304,34 @@ class DistillPress_GitHub_Updater
 
 		// Fallback to GitHub's auto-generated zipball
 		return $release_data['zipball_url'] ?? '';
+	}
+
+	/**
+	 * Get a package URL suitable for the plugin details footer action button.
+	 *
+	 * WordPress only renders the plugin-information footer button when the
+	 * plugin info payload includes a non-empty download_link, even if the
+	 * plugin is already installed and active.
+	 *
+	 * @param array|null $release_data Release data from GitHub API.
+	 * @return string
+	 */
+	private static function get_plugin_info_download_link(?array $release_data = null): string
+	{
+		if (is_array($release_data)) {
+			$package_url = self::get_package_url($release_data);
+
+			if ('' !== $package_url) {
+				return $package_url;
+			}
+		}
+
+		return sprintf(
+			'https://github.com/%s/%s/releases/latest/download/%s.zip',
+			self::GITHUB_USER,
+			self::GITHUB_REPO,
+			self::GITHUB_REPO
+		);
 	}
 
 	/**
@@ -232,7 +346,7 @@ class DistillPress_GitHub_Updater
 	public static function check_for_update($update, array $plugin_data, string $plugin_file, $locales)
 	{
 		// Verify this is our plugin
-		if (self::PLUGIN_FILE !== $plugin_file) {
+		if (self::get_plugin_file() !== $plugin_file) {
 			return $update;
 		}
 
@@ -253,7 +367,7 @@ class DistillPress_GitHub_Updater
 		return array(
 			'id'           => 'github.com/' . self::GITHUB_USER . '/' . self::GITHUB_REPO,
 			'slug'         => self::PLUGIN_SLUG,
-			'plugin'       => self::PLUGIN_FILE,
+			'plugin'       => self::get_plugin_file(),
 			'new_version'  => $new_version,
 			'version'      => $new_version,
 			'package'      => self::get_package_url($release_data),
@@ -269,9 +383,6 @@ class DistillPress_GitHub_Updater
 	/**
 	 * Provide plugin information for the WordPress plugin details popup.
 	 *
-	 * Reads sections (description, installation, FAQ, changelog) from the
-	 * local README.md instead of fetching from the GitHub release body.
-	 *
 	 * @param false|object|array $res    The result object or array.
 	 * @param string             $action The type of information being requested.
 	 * @param object             $args   Plugin API arguments.
@@ -279,36 +390,70 @@ class DistillPress_GitHub_Updater
 	 */
 	public static function plugin_info($res, $action, $args)
 	{
-		if ('plugin_information' !== $action) {
+		if (!self::is_plugin_information_api_request($action, $args)) {
 			return $res;
 		}
 
-		if (!isset($args->slug) || self::PLUGIN_SLUG !== $args->slug) {
-			return $res;
-		}
+		return self::get_safe_plugin_info_result();
+	}
 
-		$plugin_file = WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE;
-		$plugin_data = get_plugin_data($plugin_file, false, false);
+	/**
+	 * Build plugin information for the WordPress details modal.
+	 *
+	 * @return stdClass
+	 */
+	private static function build_plugin_info_result(): stdClass
+	{
 		$release_data = self::get_release_data();
 
-		$version = $release_data
+		// Resolve installed version (prefer constant, fall back to plugin headers).
+		$installed_version = '1.0.0';
+		if (defined('DISTILLPRESS_VERSION')) {
+			$installed_version = DISTILLPRESS_VERSION;
+		} else {
+			if (!function_exists('get_plugin_data')) {
+				require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			}
+			$plugin_file = WP_PLUGIN_DIR . '/' . self::get_plugin_file();
+			if (file_exists($plugin_file)) {
+				$plugin_data = get_plugin_data($plugin_file, false, false);
+				$installed_version = $plugin_data['Version'] ?? '1.0.0';
+			}
+		}
+
+		$release_version = $release_data
 			? ltrim($release_data['tag_name'], 'v')
-			: ($plugin_data['Version'] ?? '1.0.0');
+			: '';
+		$version = $installed_version;
+		$has_update = '' !== $release_version
+			&& version_compare($release_version, $installed_version, '>');
+
+		if ($has_update) {
+			$version = $release_version;
+		}
 
 		$res               = new stdClass();
 		$res->name         = self::PLUGIN_NAME;
 		$res->slug         = self::PLUGIN_SLUG;
-		$res->plugin       = self::PLUGIN_FILE;
+		$res->plugin       = self::get_plugin_file();
 		$res->version      = $version;
 		$res->author       = sprintf('<a href="https://github.com/%s">%s</a>', self::GITHUB_USER, self::GITHUB_USER);
 		$res->homepage     = sprintf('https://github.com/%s/%s', self::GITHUB_USER, self::GITHUB_REPO);
 		$res->requires     = self::REQUIRES_WP;
 		$res->tested       = get_bloginfo('version');
 		$res->requires_php = self::REQUIRES_PHP;
+		$res->external     = true;
+		$res->banners      = array();
+		$res->icons        = array();
 
-		if ($release_data) {
-			$res->download_link = self::get_package_url($release_data);
-			$res->last_updated  = $release_data['published_at'] ?? '';
+		$download_link = self::get_plugin_info_download_link($release_data);
+
+		if ('' !== $download_link) {
+			$res->download_link = $download_link;
+		}
+
+		if ($release_data && !empty($release_data['published_at'])) {
+			$res->last_updated = $release_data['published_at'];
 		}
 
 		// Build sections from local README.md.
@@ -328,8 +473,19 @@ class DistillPress_GitHub_Updater
 			$res->sections['faq'] = $readme['faq'];
 		}
 
-		$res->sections['changelog'] = !empty($readme['changelog'])
-			? $readme['changelog']
+		$changelog_html = '';
+
+		if ($has_update && !empty($release_data['body'])) {
+			$changelog_html .= '<h4>' . esc_html($release_version) . '</h4>'
+							 . self::markdown_to_html($release_data['body']);
+		}
+
+		if (!empty($readme['changelog'])) {
+			$changelog_html .= $readme['changelog'];
+		}
+
+		$res->sections['changelog'] = !empty($changelog_html)
+			? $changelog_html
 			: sprintf(
 				'<p>See <a href="https://github.com/%s/%s/releases" target="_blank">GitHub releases</a> for changelog.</p>',
 				esc_attr(self::GITHUB_USER),
@@ -340,10 +496,54 @@ class DistillPress_GitHub_Updater
 	}
 
 	/**
+	 * Build a small fallback payload if plugin details generation fails.
+	 *
+	 * @return stdClass
+	 */
+	private static function build_fallback_plugin_info_result(): stdClass
+	{
+		$result               = new stdClass();
+		$result->name         = self::PLUGIN_NAME;
+		$result->slug         = self::PLUGIN_SLUG;
+		$result->plugin       = self::get_plugin_file();
+		$result->version      = defined('DISTILLPRESS_VERSION') ? DISTILLPRESS_VERSION : '1.0.0';
+		$result->author       = sprintf('<a href="https://github.com/%s">%s</a>', self::GITHUB_USER, self::GITHUB_USER);
+		$result->homepage     = sprintf('https://github.com/%s/%s', self::GITHUB_USER, self::GITHUB_REPO);
+		$result->requires     = self::REQUIRES_WP;
+		$result->tested       = get_bloginfo('version');
+		$result->requires_php = self::REQUIRES_PHP;
+		$result->external     = true;
+		$result->banners      = array();
+		$result->icons        = array();
+
+		$download_link = self::get_plugin_info_download_link();
+
+		if ('' !== $download_link) {
+			$result->download_link = $download_link;
+		}
+
+		$result->sections     = array(
+			'description' => '<p>' . esc_html(self::PLUGIN_DESCRIPTION) . '</p>',
+			'changelog'   => sprintf(
+				'<p>See <a href="https://github.com/%s/%s/releases" target="_blank">GitHub releases</a> for changelog.</p>',
+				esc_attr(self::GITHUB_USER),
+				esc_attr(self::GITHUB_REPO)
+			),
+		);
+
+		return $result;
+	}
+
+	/**
 	 * Inject CSS overrides in the plugin-information iframe.
 	 *
 	 * wp_kses_post() strips <style> tags from section content, so CSS must be
 	 * injected via the admin_head hook which fires inside the iframe's <head>.
+	 *
+	 * A CSS geometric pattern replaces the banner image area: WordPress only adds
+	 * the `with-banner` class to #plugin-information-title when $api->banners
+	 * contains real image URLs. A small JS snippet adds the class manually so the
+	 * CSS pattern and h2 styling apply without any external image.
 	 */
 	public static function plugin_info_css(): void
 	{
@@ -355,7 +555,45 @@ class DistillPress_GitHub_Updater
 			return;
 		}
 
+		// CSS pattern variables for the banner background.
+		$pattern_css = '--s: 27px;'
+			. '--c1: #b2b2b2;'
+			. '--c2: #ffffff;'
+			. '--c3: #d9d9d9;'
+			. '--_g: var(--c3) 0 120deg, #0000 0;';
+
+		$pattern_bg = 'conic-gradient(from -60deg at 50% calc(100%/3), var(--_g)),'
+			. 'conic-gradient(from 120deg at 50% calc(200%/3), var(--_g)),'
+			. 'conic-gradient(from 60deg at calc(200%/3), var(--c3) 60deg, var(--c2) 0 120deg, #0000 0),'
+			. 'conic-gradient(from 180deg at calc(100%/3), var(--c1) 60deg, var(--_g)),'
+			. 'linear-gradient(90deg, var(--c1) calc(100%/6), var(--c2) 0 50%,'
+			. 'var(--c1) 0 calc(500%/6), var(--c2) 0)';
+
 		echo '<style>'
+			// CSS geometric pattern banner (replaces banner image).
+			. '#plugin-information-title.with-banner {'
+			.   $pattern_css
+			.   'background: ' . $pattern_bg . ' !important;'
+			.   'background-size: calc(1.732 * var(--s)) var(--s) !important;'
+			. '}'
+			// Plugin name styled like official WordPress banner h2.
+			. '#plugin-information-title.with-banner h2 {'
+			.   'position: relative;'
+			.   'font-family: "Helvetica Neue", sans-serif;'
+			.   'display: inline-block;'
+			.   'font-size: 30px;'
+			.   'line-height: 1.68;'
+			.   'box-sizing: border-box;'
+			.   'max-width: 100%;'
+			.   'padding: 0 15px;'
+			.   'margin-top: 174px;'
+			.   'color: #fff;'
+			.   'background: rgba(29, 35, 39, 0.9);'
+			.   'text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);'
+			.   'box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);'
+			.   'border-radius: 8px;'
+			. '}'
+			// Section content fixes.
 			. '#section-holder .section h2 { margin: 1.5em 0 0.5em; clear: none; }'
 			. '#section-holder .section h3 { margin: 1.5em 0 0.5em; }'
 			. '#section-holder .section > :first-child { margin-top: 0; }'
@@ -364,6 +602,15 @@ class DistillPress_GitHub_Updater
 			. '.md-tr > span { display: table-cell; padding: 6px 10px; border: 1px solid #ddd; vertical-align: top; }'
 			. '.md-th > span { font-weight: 600; background: #f5f5f5; }'
 			. '</style>';
+
+		// WordPress only adds with-banner for real banner images; add it here so
+		// the CSS pattern applies.
+		echo '<script>'
+			. 'document.addEventListener("DOMContentLoaded",function(){'
+			. 'var title=document.getElementById("plugin-information-title");'
+			. 'if(title){title.classList.add("with-banner");}'
+			. '});'
+			. '</script>';
 	}
 
 	// ------------------------------------------------------------------
@@ -377,7 +624,7 @@ class DistillPress_GitHub_Updater
 	 */
 	private static function parse_readme(): array
 	{
-		$readme_path = WP_PLUGIN_DIR . '/' . dirname(self::PLUGIN_FILE) . '/README.md';
+		$readme_path = WP_PLUGIN_DIR . '/' . self::get_plugin_directory() . '/README.md';
 
 		if (!file_exists($readme_path)) {
 			return array();
@@ -433,8 +680,9 @@ class DistillPress_GitHub_Updater
 	/**
 	 * Convert Markdown to HTML using Parsedown.
 	 *
-	 * Images are stripped before conversion since they are not useful
-	 * inside the WordPress plugin-information modal.
+	 * Images are stripped before conversion since they are not useful inside the
+	 * WordPress plugin-information modal. This includes both Markdown image
+	 * syntax and raw HTML <img> blocks often used for README badges and logos.
 	 *
 	 * @param string $markdown Markdown text.
 	 * @return string HTML output.
@@ -447,13 +695,15 @@ class DistillPress_GitHub_Updater
 
 		// Remove images (not useful in the modal).
 		$markdown = preg_replace('/!\[[^\]]*\]\([^\)]+\)/', '', $markdown);
+		$markdown = preg_replace('/<p\b[^>]*>\s*(?:(?:<a\b[^>]*>\s*)?<img\b[^>]*>\s*(?:<\/a>\s*)?)+<\/p>\s*/is', '', $markdown);
+		$markdown = preg_replace('/(?:<a\b[^>]*>\s*)?<img\b[^>]*>\s*(?:<\/a>)?/i', '', $markdown);
 
 		if (!class_exists('Parsedown')) {
 			require_once __DIR__ . '/Parsedown.php';
 		}
 
 		$parsedown = new Parsedown();
-		$parsedown->setSafeMode(true);
+		$parsedown->setMarkupEscaped(true);
 
 		$html = $parsedown->text($markdown);
 
@@ -519,12 +769,12 @@ class DistillPress_GitHub_Updater
 		}
 
 		// Check if this is our plugin
-		if (self::PLUGIN_FILE !== $hook_extra['plugin']) {
+		if (self::get_plugin_file() !== $hook_extra['plugin']) {
 			return $source;
 		}
 
 		// Expected folder name (extract from PLUGIN_FILE)
-		$correct_folder = dirname(self::PLUGIN_FILE);
+		$correct_folder = self::get_plugin_directory();
 
 		// Get the current folder name from source path
 		$source_folder = basename(untrailingslashit($source));
@@ -559,7 +809,7 @@ class DistillPress_GitHub_Updater
 
 		return new WP_Error(
 			'rename_failed',
-			__('Unable to rename the update folder. Please retry or update manually.', self::TEXT_DOMAIN)
+			__('Unable to rename the update folder. Please retry or update manually.', 'distillpress')
 		);
 	}
 }

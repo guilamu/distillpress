@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
  *
  * Provides methods to interact with the POE API.
  */
-class DistillPress_POE_API_Service
+class DistillPress_POE_API_Service extends DistillPress_API_Service
 {
 
 	/**
@@ -28,35 +28,85 @@ class DistillPress_POE_API_Service
 	private const API_BASE_URL = 'https://api.poe.com';
 
 	/**
+	 * Model list cache lifetime.
+	 *
+	 * @var int
+	 */
+	private const MODELS_CACHE_TTL = 3600;
+
+	/**
+	 * Reasoning parameters understood by the plugin, by order of preference.
+	 *
+	 * POE advertises, per model, which one it accepts; sending another one is
+	 * rejected with an HTTP 400, so only the advertised one may be used.
+	 *
+	 * @var array
+	 */
+	private const REASONING_PARAMETERS = array('reasoning_effort', 'output_effort', 'thinking_level', 'enable_thinking');
+
+	/**
+	 * Accepted values for each effort level, by order of preference.
+	 *
+	 * Models expose different enums; the first supported value wins.
+	 *
+	 * @var array
+	 */
+	private const REASONING_VALUES = array(
+		'none' => array('none', 'minimal', 'low'),
+		'low' => array('low', 'minimal', 'medium'),
+		'medium' => array('medium', 'low', 'high'),
+		'high' => array('high', 'xhigh', 'medium'),
+		'max' => array('max', 'xhigh', 'high'),
+	);
+
+	/**
+	 * Chat completions endpoint.
+	 *
+	 * @return string Absolute URL.
+	 */
+	protected static function get_endpoint()
+	{
+		return self::API_BASE_URL . '/v1/chat/completions';
+	}
+
+	/**
+	 * Provider label.
+	 *
+	 * @return string Provider name.
+	 */
+	protected static function get_label()
+	{
+		return 'POE';
+	}
+
+	/**
 	 * Get available models from POE API.
 	 *
 	 * @param string $api_key     POE API key.
-	 * @param bool   $image_only  Only return models supporting image input.
 	 * @param bool   $latest_only Only keep the most recent version of each model.
 	 * @param bool   $force       Ignore the cached list and query the API again.
 	 * @return array|WP_Error Array of models or error.
 	 */
-	public static function get_models($api_key, $image_only = false, $latest_only = true, $force = false)
+	public static function get_models($api_key, $latest_only = true, $force = false)
 	{
 		if (empty($api_key)) {
 			return new WP_Error('missing_api_key', __('API key is required', 'distillpress'));
 		}
 
-		$cache_key = self::get_models_cache_key($api_key, $image_only);
+		$cache_key = self::get_models_cache_key($api_key);
 
 		// The cache always holds the complete list; filtering happens on read.
 		$models = $force ? false : get_transient($cache_key);
 
-		if (false === $models) {
-			$models = self::fetch_models($api_key, $image_only);
+		if (!is_array($models)) {
+			$models = self::fetch_models($api_key);
 
 			if (is_wp_error($models)) {
 				return $models;
 			}
 
-			// Cache for 1 hour
 			if (!empty($models)) {
-				set_transient($cache_key, $models, HOUR_IN_SECONDS);
+				set_transient($cache_key, $models, self::MODELS_CACHE_TTL);
 			}
 		}
 
@@ -66,23 +116,22 @@ class DistillPress_POE_API_Service
 	/**
 	 * Build the transient key holding the model list for an API key.
 	 *
-	 * @param string $api_key    POE API key.
-	 * @param bool   $image_only Image-capable models only.
+	 * @param string $api_key POE API key.
 	 * @return string Transient key.
 	 */
-	private static function get_models_cache_key($api_key, $image_only)
+	private static function get_models_cache_key($api_key)
 	{
-		return 'distillpress_models_' . md5($api_key) . ($image_only ? '_img' : '');
+		// The suffix is bumped whenever the cached structure changes.
+		return 'distillpress_models_v2_' . md5($api_key);
 	}
 
 	/**
 	 * Query the POE API for the list of usable models.
 	 *
-	 * @param string $api_key    POE API key.
-	 * @param bool   $image_only Only return models supporting image input.
+	 * @param string $api_key POE API key.
 	 * @return array|WP_Error Array of models or error.
 	 */
-	private static function fetch_models($api_key, $image_only)
+	private static function fetch_models($api_key)
 	{
 		$response = wp_remote_get(
 			self::API_BASE_URL . '/v1/models',
@@ -100,39 +149,28 @@ class DistillPress_POE_API_Service
 		}
 
 		$status_code = wp_remote_retrieve_response_code($response);
-		if (200 !== $status_code) {
-			return new WP_Error(
-				'api_error',
-				/* translators: %d: HTTP status code */
-				sprintf(__('API returned status %d', 'distillpress'), $status_code)
-			);
-		}
-
 		$body = json_decode(wp_remote_retrieve_body($response), true);
+
+		if (200 !== $status_code) {
+			return self::build_api_error($status_code, $body, wp_remote_retrieve_body($response));
+		}
 
 		if (JSON_ERROR_NONE !== json_last_error()) {
 			return new WP_Error('json_error', __('Failed to parse API response', 'distillpress'));
 		}
 
 		$models = array();
-		foreach ($body['data'] ?? array() as $model) {
-			if (empty($model['id']) || !self::supports_chat_completions($model)) {
+		foreach (isset($body['data']) && is_array($body['data']) ? $body['data'] : array() as $model) {
+			if (empty($model['id']) || !self::is_text_model($model)) {
 				continue;
 			}
 
-			$input_modalities = $model['architecture']['input_modalities'] ?? array();
-
-			// Filter for image-capable models if requested
-			if ($image_only && !in_array('image', $input_modalities, true)) {
-				continue;
-			}
-
-			$name = $model['metadata']['display_name'] ?? $model['id'];
+			$name = isset($model['metadata']['display_name']) ? $model['metadata']['display_name'] : $model['id'];
 
 			$models[] = array(
 				'id' => $model['id'],
 				'name' => self::add_version_to_name($model['id'], $name),
-				'supports_images' => in_array('image', $input_modalities, true),
+				'reasoning' => self::extract_reasoning_support($model),
 			);
 		}
 
@@ -142,27 +180,139 @@ class DistillPress_POE_API_Service
 	/**
 	 * Check that a model can be used for the chat completions the plugin sends.
 	 *
-	 * POE also lists image, video and audio models, which this plugin cannot use.
+	 * POE also lists image, video and audio bots, which this plugin cannot use.
 	 *
 	 * @param array $model Raw model entry from the API.
-	 * @return bool True if the model accepts chat completions and returns text.
+	 * @return bool True when the model generates text from a chat completion.
 	 */
-	private static function supports_chat_completions($model)
+	private static function is_text_model($model)
 	{
-		$endpoints = $model['supported_endpoints'] ?? null;
+		$output_modalities = isset($model['architecture']['output_modalities']) ? $model['architecture']['output_modalities'] : null;
 
-		// Be permissive when the API does not advertise its endpoints.
-		if (is_array($endpoints) && !in_array('/v1/chat/completions', $endpoints, true)) {
+		if (is_array($output_modalities) && !empty($output_modalities) && !in_array('text', $output_modalities, true)) {
 			return false;
 		}
 
-		$output_modalities = $model['architecture']['output_modalities'] ?? null;
+		$endpoints = isset($model['supported_endpoints']) ? $model['supported_endpoints'] : null;
 
-		if (is_array($output_modalities) && !in_array('text', $output_modalities, true)) {
-			return false;
+		if (is_array($endpoints) && !empty($endpoints)) {
+			return in_array('/v1/chat/completions', $endpoints, true);
 		}
 
-		return true;
+		// POE leaves the endpoint list empty for most models. Per-token pricing
+		// is then the reliable marker of a language model: image, video and
+		// utility bots are billed per request, or not priced at all.
+		$pricing = isset($model['pricing']) ? $model['pricing'] : array();
+
+		return !empty($pricing['prompt']) && !empty($pricing['completion']);
+	}
+
+	/**
+	 * Read which reasoning parameter a model accepts, if any.
+	 *
+	 * @param array $model Raw model entry from the API.
+	 * @return array|null Parameter name and accepted values, or null.
+	 */
+	private static function extract_reasoning_support($model)
+	{
+		$parameters = isset($model['parameters']) && is_array($model['parameters']) ? $model['parameters'] : array();
+		$available = array();
+
+		foreach ($parameters as $parameter) {
+			if (isset($parameter['name'])) {
+				$available[$parameter['name']] = isset($parameter['schema']) ? $parameter['schema'] : array();
+			}
+		}
+
+		foreach (self::REASONING_PARAMETERS as $name) {
+			if (!isset($available[$name])) {
+				continue;
+			}
+
+			$schema = $available[$name];
+
+			return array(
+				'parameter' => $name,
+				'values' => isset($schema['enum']) && is_array($schema['enum']) ? $schema['enum'] : array(),
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Build the reasoning entry to add to a chat request payload.
+	 *
+	 * @param string $api_key  POE API key.
+	 * @param string $model_id Model ID.
+	 * @return array Payload fragment, empty when the model has no such control.
+	 */
+	public static function get_reasoning_payload($api_key, $model_id)
+	{
+		$level = DistillPress::get_reasoning_effort();
+
+		if ('' === $level || empty($api_key) || empty($model_id)) {
+			return array();
+		}
+
+		$support = self::get_reasoning_support($api_key, $model_id);
+
+		if (null === $support) {
+			return array();
+		}
+
+		// A boolean control cannot express a level: it can only be turned off.
+		if (empty($support['values'])) {
+			return array($support['parameter'] => 'none' !== $level);
+		}
+
+		$preferences = isset(self::REASONING_VALUES[$level]) ? self::REASONING_VALUES[$level] : array();
+
+		foreach ($preferences as $value) {
+			if (in_array($value, $support['values'], true)) {
+				return array($support['parameter'] => $value);
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * Look up the reasoning control advertised for a model.
+	 *
+	 * @param string $api_key  POE API key.
+	 * @param string $model_id Model ID.
+	 * @return array|null Parameter name and accepted values, or null.
+	 */
+	private static function get_reasoning_support($api_key, $model_id)
+	{
+		// The whole list is searched: the selected model may be an older version
+		// that the filtered list no longer offers.
+		$models = self::get_models($api_key, false);
+
+		if (is_wp_error($models)) {
+			return null;
+		}
+
+		foreach ($models as $model) {
+			if ($model['id'] === $model_id) {
+				return isset($model['reasoning']) ? $model['reasoning'] : null;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Add the reasoning parameter to every chat request.
+	 *
+	 * @param string $api_key POE API key.
+	 * @param string $model   Model ID.
+	 * @return array Extra payload entries.
+	 */
+	protected static function get_extra_payload($api_key, $model)
+	{
+		return self::get_reasoning_payload($api_key, $model);
 	}
 
 	/**
@@ -301,8 +451,8 @@ class DistillPress_POE_API_Service
 		$length = max(count($a['numbers']), count($b['numbers']));
 
 		for ($i = 0; $i < $length; $i++) {
-			$left = $a['numbers'][$i] ?? 0;
-			$right = $b['numbers'][$i] ?? 0;
+			$left = isset($a['numbers'][$i]) ? $a['numbers'][$i] : 0;
+			$right = isset($b['numbers'][$i]) ? $b['numbers'][$i] : 0;
 
 			if ($left !== $right) {
 				return $left < $right ? -1 : 1;
@@ -332,256 +482,19 @@ class DistillPress_POE_API_Service
 	}
 
 	/**
-	 * Send a chat completion request (text only).
-	 *
-	 * @param string $api_key     POE API key.
-	 * @param string $model       Model ID.
-	 * @param string $prompt      User message/prompt.
-	 * @param float  $temperature Temperature (0.0-1.0).
-	 * @param int    $max_tokens  Maximum tokens in response.
-	 * @return string|WP_Error Response content or error.
-	 */
-	public static function chat_completion($api_key, $model, $prompt, $temperature = 0.7, $max_tokens = 1000)
-	{
-		if (empty($api_key)) {
-			return new WP_Error('missing_api_key', __('API key is required', 'distillpress'));
-		}
-
-		$payload = array(
-			'model' => $model,
-			'messages' => array(
-				array(
-					'role' => 'user',
-					'content' => $prompt,
-				),
-			),
-			'temperature' => $temperature,
-			'max_tokens' => $max_tokens,
-		);
-
-		$response = wp_remote_post(
-			self::API_BASE_URL . '/v1/chat/completions',
-			array(
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $api_key,
-					'Content-Type' => 'application/json',
-				),
-				'body' => wp_json_encode($payload),
-				'timeout' => 60,
-				'sslverify' => true,
-			)
-		);
-
-		if (is_wp_error($response)) {
-			return $response;
-		}
-
-		$status_code = wp_remote_retrieve_response_code($response);
-		if (200 !== $status_code) {
-			$error_body = wp_remote_retrieve_body($response);
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('DistillPress POE API Error: ' . $error_body);
-			}
-			return new WP_Error(
-				'api_error',
-				/* translators: %d: HTTP status code */
-				sprintf(__('API returned status %d', 'distillpress'), $status_code)
-			);
-		}
-
-		$body = json_decode(wp_remote_retrieve_body($response), true);
-
-		// Log the API request usage
-		$usage = isset($body['usage']) ? $body['usage'] : null;
-		self::log_request($api_key, 'chat_completion', $model, $usage);
-
-		if (isset($body['choices'][0]['message']['content'])) {
-			return $body['choices'][0]['message']['content'];
-		}
-
-		return new WP_Error('invalid_response', __('Invalid API response', 'distillpress'));
-	}
-
-	/**
-	 * Send a chat completion with system prompt for better control.
-	 *
-	 * @param string $api_key       POE API key.
-	 * @param string $model         Model ID.
-	 * @param string $system_prompt System instructions.
-	 * @param string $user_prompt   User message.
-	 * @param float  $temperature   Temperature (0.0-1.0).
-	 * @param int    $max_tokens    Maximum tokens in response.
-	 * @return string|WP_Error Response content or error.
-	 */
-	public static function chat_with_system($api_key, $model, $system_prompt, $user_prompt, $temperature = 0.7, $max_tokens = 1000)
-	{
-		if (empty($api_key)) {
-			return new WP_Error('missing_api_key', __('API key is required', 'distillpress'));
-		}
-
-		$payload = array(
-			'model' => $model,
-			'messages' => array(
-				array(
-					'role' => 'system',
-					'content' => $system_prompt,
-				),
-				array(
-					'role' => 'user',
-					'content' => $user_prompt,
-				),
-			),
-			'temperature' => $temperature,
-			'max_tokens' => $max_tokens,
-		);
-
-		$response = wp_remote_post(
-			self::API_BASE_URL . '/v1/chat/completions',
-			array(
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $api_key,
-					'Content-Type' => 'application/json',
-				),
-				'body' => wp_json_encode($payload),
-				'timeout' => 60,
-				'sslverify' => true,
-			)
-		);
-
-		if (is_wp_error($response)) {
-			return $response;
-		}
-
-		$status_code = wp_remote_retrieve_response_code($response);
-		if (200 !== $status_code) {
-			$error_body = wp_remote_retrieve_body($response);
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('DistillPress POE API Error: ' . $error_body);
-			}
-			return new WP_Error(
-				'api_error',
-				/* translators: %d: HTTP status code */
-				sprintf(__('API returned status %d', 'distillpress'), $status_code)
-			);
-		}
-
-		$body = json_decode(wp_remote_retrieve_body($response), true);
-
-		// Log the API request usage
-		$usage = isset($body['usage']) ? $body['usage'] : null;
-		self::log_request($api_key, 'chat_with_system', $model, $usage);
-
-		if (isset($body['choices'][0]['message']['content'])) {
-			return $body['choices'][0]['message']['content'];
-		}
-
-		return new WP_Error('invalid_response', __('Invalid API response', 'distillpress'));
-	}
-
-	/**
-	 * Parse JSON from AI response (handles markdown code blocks).
-	 *
-	 * @param string $text The AI response text.
-	 * @return array|null Parsed JSON or null.
-	 */
-	public static function extract_json_from_response($text)
-	{
-		// Try to find markdown JSON code block
-		if (preg_match('/```json\s*(.*?)\s*```/s', $text, $matches)) {
-			$json = json_decode($matches[1], true);
-			if (null !== $json) {
-				return $json;
-			}
-		}
-
-		// Try to find any code block
-		if (preg_match('/```\s*(.*?)\s*```/s', $text, $matches)) {
-			$json = json_decode($matches[1], true);
-			if (null !== $json) {
-				return $json;
-			}
-		}
-
-		// Try to find JSON array in text
-		if (preg_match('/\[.*\]/s', $text, $matches)) {
-			$json = json_decode($matches[0], true);
-			if (null !== $json) {
-				return $json;
-			}
-		}
-
-		// Try to find JSON object in text
-		if (preg_match('/\{.*\}/s', $text, $matches)) {
-			$json = json_decode($matches[0], true);
-			if (null !== $json) {
-				return $json;
-			}
-		}
-
-		// Fallback: try raw text
-		return json_decode($text, true);
-	}
-
-	/**
-	 * Clear model cache (e.g., when API key changes).
-	 *
-	 * @param string $api_key API key.
-	 */
-	public static function clear_models_cache($api_key)
-	{
-		delete_transient('distillpress_models_' . md5($api_key));
-		delete_transient('distillpress_models_' . md5($api_key) . '_img');
-	}
-
-	/**
-	 * Log an API request for tracking usage.
-	 *
-	 * @param string     $api_key     POE API key (needed for points lookup).
-	 * @param string     $action_type Type of action (chat_completion, chat_with_system).
-	 * @param string     $model       Model ID used.
-	 * @param array|null $usage       Usage data from API response.
-	 */
-	public static function log_request($api_key, $action_type, $model, $usage = null)
-	{
-		$log = get_option('distillpress_api_log', array());
-
-		// Fetch actual points cost from POE API
-		$cost_points = self::fetch_last_query_cost($api_key);
-
-		// Build log entry
-		$entry = array(
-			'timestamp' => current_time('mysql'),
-			'action_type' => $action_type,
-			'model' => $model,
-			'cost_points' => $cost_points,
-			'prompt_tokens' => isset($usage['prompt_tokens']) ? (int) $usage['prompt_tokens'] : null,
-			'completion_tokens' => isset($usage['completion_tokens']) ? (int) $usage['completion_tokens'] : null,
-			'total_tokens' => isset($usage['total_tokens']) ? (int) $usage['total_tokens'] : null,
-		);
-
-		// Add to log (prepend for newest first)
-		array_unshift($log, $entry);
-
-		// Keep only last 10 entries
-		$log = array_slice($log, 0, 10);
-
-		update_option('distillpress_api_log', $log);
-	}
-
-	/**
-	 * Fetch the cost points from the last API call via Poe usage history.
+	 * Fetch the cost in points of the last API call from the Poe usage history.
 	 *
 	 * @param string $api_key POE API key.
 	 * @return int|null The cost in points, or null if unavailable.
 	 */
-	private static function fetch_last_query_cost($api_key)
+	protected static function get_last_request_cost($api_key)
 	{
 		if (empty($api_key)) {
 			return null;
 		}
 
 		$response = wp_remote_get(
-			'https://api.poe.com/usage/points_history?limit=1',
+			self::API_BASE_URL . '/usage/points_history?limit=1',
 			array(
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $api_key,
@@ -591,12 +504,7 @@ class DistillPress_POE_API_Service
 			)
 		);
 
-		if (is_wp_error($response)) {
-			return null;
-		}
-
-		$status_code = wp_remote_retrieve_response_code($response);
-		if (200 !== $status_code) {
+		if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
 			return null;
 		}
 
@@ -607,15 +515,5 @@ class DistillPress_POE_API_Service
 		}
 
 		return null;
-	}
-
-	/**
-	 * Get the API request log.
-	 *
-	 * @return array Array of log entries.
-	 */
-	public static function get_request_log()
-	{
-		return get_option('distillpress_api_log', array());
 	}
 }

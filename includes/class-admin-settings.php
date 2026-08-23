@@ -95,7 +95,17 @@ class DistillPress_Admin_Settings
 			array(
 				'type' => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
-				'default' => 'gpt-4o-mini',
+				'default' => DistillPress::DEFAULT_POE_MODEL,
+			)
+		);
+
+		register_setting(
+			'distillpress_settings',
+			'distillpress_reasoning_effort',
+			array(
+				'type' => 'string',
+				'sanitize_callback' => array(__CLASS__, 'sanitize_reasoning_effort'),
+				'default' => '',
 			)
 		);
 
@@ -213,6 +223,14 @@ class DistillPress_Admin_Settings
 			'distillpress_gemini_model',
 			__('Gemini Model', 'distillpress'),
 			array(__CLASS__, 'render_gemini_model_field'),
+			'distillpress',
+			'distillpress_api_section'
+		);
+
+		add_settings_field(
+			'distillpress_reasoning_effort',
+			__('Reasoning Effort', 'distillpress'),
+			array(__CLASS__, 'render_reasoning_effort_field'),
 			'distillpress',
 			'distillpress_api_section'
 		);
@@ -411,7 +429,7 @@ class DistillPress_Admin_Settings
 			?>
 			<input type="password" id="distillpress_api_key" name="distillpress_api_key" value="<?php echo esc_attr($api_key); ?>"
 				class="regular-text" autocomplete="off">
-			<button type="button" class="button" id="distillpress-toggle-api-key">
+			<button type="button" class="button distillpress-toggle-key" data-target="#distillpress_api_key">
 				<?php esc_html_e('Show', 'distillpress'); ?>
 			</button>
 			<p class="description">
@@ -440,7 +458,7 @@ class DistillPress_Admin_Settings
 			?>
 			<input type="password" id="distillpress_gemini_api_key" name="distillpress_gemini_api_key" value="<?php echo esc_attr($api_key); ?>"
 				class="regular-text" autocomplete="off">
-			<button type="button" class="button" id="distillpress-toggle-gemini-api-key">
+			<button type="button" class="button distillpress-toggle-key" data-target="#distillpress_gemini_api_key">
 				<?php esc_html_e('Show', 'distillpress'); ?>
 			</button>
 			<p class="description">
@@ -461,8 +479,8 @@ class DistillPress_Admin_Settings
 	 */
 	public static function render_model_field()
 	{
-		$current_model = get_option('distillpress_model', 'gpt-4o-mini');
-		$api_key = DistillPress::get_poe_api_key();
+		$current_model = get_option('distillpress_model', DistillPress::DEFAULT_POE_MODEL);
+		$api_key = DistillPress::get_api_key('poe');
 		?>
 		<select id="distillpress_model" name="distillpress_model" class="regular-text">
 			<?php if (empty($api_key)): ?>
@@ -507,6 +525,49 @@ class DistillPress_Admin_Settings
 			<?php esc_html_e('Select the Gemini model to use. Flash is faster and cheaper; Pro is more capable.', 'distillpress'); ?>
 		</p>
 		<?php
+	}
+
+	/**
+	 * Render the reasoning effort selector.
+	 */
+	public static function render_reasoning_effort_field()
+	{
+		$current = DistillPress::get_reasoning_effort();
+		$choices = array(
+			'' => __('Model default', 'distillpress'),
+			'none' => __('Off (no reasoning)', 'distillpress'),
+			'low' => __('Low', 'distillpress'),
+			'medium' => __('Medium', 'distillpress'),
+			'high' => __('High', 'distillpress'),
+			'max' => __('Maximum', 'distillpress'),
+		);
+		?>
+		<select id="distillpress_reasoning_effort" name="distillpress_reasoning_effort" class="regular-text">
+			<?php foreach ($choices as $value => $label): ?>
+				<option value="<?php echo esc_attr($value); ?>" <?php selected($current, $value); ?>>
+					<?php echo esc_html($label); ?>
+				</option>
+			<?php endforeach; ?>
+		</select>
+		<p class="description">
+			<?php esc_html_e('How much thinking the model should spend before answering. More reasoning costs more and takes longer.', 'distillpress'); ?>
+			<br>
+			<?php esc_html_e('Only sent to models that accept it; the others keep their own default.', 'distillpress'); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Sanitize the reasoning effort setting.
+	 *
+	 * @param string $value Submitted value.
+	 * @return string A supported level, or an empty string for the model default.
+	 */
+	public static function sanitize_reasoning_effort($value)
+	{
+		$value = sanitize_text_field($value);
+
+		return in_array($value, DistillPress::REASONING_LEVELS, true) ? $value : '';
 	}
 
 	/**
@@ -652,6 +713,21 @@ class DistillPress_Admin_Settings
 						</thead>
 						<tbody>
 							<?php foreach ($log as $entry): ?>
+								<?php
+								// Entries written by older versions may lack some keys.
+								$entry = array_merge(
+									array(
+										'timestamp' => '',
+										'action_type' => '',
+										'model' => '',
+										'cost_points' => null,
+										'prompt_tokens' => null,
+										'completion_tokens' => null,
+										'total_tokens' => null,
+									),
+									(array) $entry
+								);
+								?>
 								<tr>
 									<td><?php echo esc_html($entry['timestamp']); ?></td>
 									<td><?php echo esc_html(ucwords(str_replace('_', ' ', $entry['action_type']))); ?></td>

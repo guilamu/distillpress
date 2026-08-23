@@ -86,17 +86,11 @@
             // Auto-categorize button
             $(document).on('click', '#distillpress-auto-categorize', this.autoCategorize.bind(this));
 
-            // Copy summary button
-            $(document).on('click', '#distillpress-copy-summary', this.copySummary.bind(this));
+            // Copy buttons (summary and teaser)
+            $(document).on('click', '.distillpress-copy', this.copyText.bind(this));
 
-            // Copy teaser button
-            $(document).on('click', '#distillpress-copy-teaser', this.copyTeaser.bind(this));
-
-            // Toggle API key visibility (POE)
-            $(document).on('click', '#distillpress-toggle-api-key', this.toggleApiKey.bind(this));
-
-            // Toggle API key visibility (Gemini)
-            $(document).on('click', '#distillpress-toggle-gemini-api-key', this.toggleGeminiApiKey.bind(this));
+            // API key visibility toggles (POE and Gemini)
+            $(document).on('click', '.distillpress-toggle-key', this.toggleKeyVisibility.bind(this));
 
             // Refresh models button (POE)
             $(document).on('click', '#distillpress-refresh-models', this.refreshModels.bind(this));
@@ -383,95 +377,53 @@
         },
 
         /**
-         * Copy summary to clipboard.
+         * Copy the text of the element named by the button to the clipboard.
          *
          * @param {Event} e Click event.
          */
-        copySummary: function(e) {
+        copyText: function(e) {
             e.preventDefault();
 
+            var self = this;
             var $btn = $(e.currentTarget);
-            var summaryText = $('#distillpress-summary-result .distillpress-summary').text();
+            var text = $($btn.data('source')).text();
+
+            if (!text) {
+                return;
+            }
+
+            var done = function() {
+                self.showButtonFeedback($btn, distillpressData.i18n.copied);
+            };
 
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(summaryText).then(function() {
-                    DistillPressAdmin.showButtonFeedback($btn, distillpressData.i18n.copied);
-                });
-            } else {
-                // Fallback for older browsers
-                var $temp = $('<textarea>');
-                $('body').append($temp);
-                $temp.val(summaryText).select();
-                document.execCommand('copy');
-                $temp.remove();
-                this.showButtonFeedback($btn, distillpressData.i18n.copied);
+                navigator.clipboard.writeText(text).then(done);
+                return;
             }
+
+            // Fallback for browsers without the async clipboard API
+            var $temp = $('<textarea>');
+            $('body').append($temp);
+            $temp.val(text).select();
+            document.execCommand('copy');
+            $temp.remove();
+            done();
         },
 
         /**
-         * Copy teaser to clipboard.
+         * Show or hide the API key field named by the button.
          *
          * @param {Event} e Click event.
          */
-        copyTeaser: function(e) {
+        toggleKeyVisibility: function(e) {
             e.preventDefault();
 
             var $btn = $(e.currentTarget);
-            var teaserText = $('#distillpress-summary-result .distillpress-teaser').text();
+            var $input = $($btn.data('target'));
+            var hidden = $input.attr('type') === 'password';
 
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(teaserText).then(function() {
-                    DistillPressAdmin.showButtonFeedback($btn, distillpressData.i18n.copied);
-                });
-            } else {
-                // Fallback for older browsers
-                var $temp = $('<textarea>');
-                $('body').append($temp);
-                $temp.val(teaserText).select();
-                document.execCommand('copy');
-                $temp.remove();
-                this.showButtonFeedback($btn, distillpressData.i18n.copied);
-            }
-        },
-
-        /**
-         * Toggle API key visibility.
-         *
-         * @param {Event} e Click event.
-         */
-        toggleApiKey: function(e) {
-            e.preventDefault();
-
-            var $btn = $(e.currentTarget);
-            var $input = $('#distillpress_api_key');
-
-            if ($input.attr('type') === 'password') {
-                $input.attr('type', 'text');
-                $btn.text($btn.text().replace('Show', 'Hide'));
-            } else {
-                $input.attr('type', 'password');
-                $btn.text($btn.text().replace('Hide', 'Show'));
-            }
-        },
-
-        /**
-         * Toggle Gemini API key visibility.
-         *
-         * @param {Event} e Click event.
-         */
-        toggleGeminiApiKey: function(e) {
-            e.preventDefault();
-
-            var $btn = $(e.currentTarget);
-            var $input = $('#distillpress_gemini_api_key');
-
-            if ($input.attr('type') === 'password') {
-                $input.attr('type', 'text');
-                $btn.text($btn.text().replace('Show', 'Hide'));
-            } else {
-                $input.attr('type', 'password');
-                $btn.text($btn.text().replace('Hide', 'Show'));
-            }
+            $input.attr('type', hidden ? 'text' : 'password');
+            $btn.text(hidden ? distillpressData.i18n.hide : distillpressData.i18n.show);
         },
 
         /**

@@ -1,8 +1,8 @@
-# Translation of DistillPress in French
+# Translation of DistillPress
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: DistillPress 1.3.2\n"
+"Project-Id-Version: DistillPress 1.4.0\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
 "POT-Creation-Date: 2026-02-21T12:00:00+00:00\n"
 "PO-Revision-Date: 2026-03-31 14:02+0200\n"
@@ -67,13 +67,17 @@ msgstr "Veuillez d'abord ajouter du contenu à votre article."
 msgid "No matching categories found."
 msgstr "Aucune catégorie correspondante trouvée."
 
-#: distillpress.php
-msgid "Copy summary"
-msgstr "Copier le résumé"
+#: distillpress.php, includes/class-admin-settings.php
+msgid "Show"
+msgstr "Afficher"
 
 #: distillpress.php
-msgid "Copy teaser"
-msgstr "Copier l'accroche"
+msgid "Hide"
+msgstr "Masquer"
+
+#: distillpress.php
+msgid "Copied!"
+msgstr "Copié !"
 
 #: distillpress.php
 msgid "No teaser generated."
@@ -88,81 +92,103 @@ msgstr "Aucun résumé généré."
 msgid "%d models loaded."
 msgstr "%d modèles chargés."
 
+#. translators: %d: number of models
 #: distillpress.php
 msgid "Unable to load the model list."
 msgstr "Impossible de charger la liste des modèles."
-
-#: distillpress.php
-msgid "No model returned by the API. Please check your API key."
-msgstr "Aucun modèle renvoyé par l'API. Vérifiez votre clé API."
-
-#: distillpress.php
-msgid "Copied!"
-msgstr "Copié !"
 
 #: distillpress.php
 msgid "Settings"
 msgstr "Réglages"
 
 #: distillpress.php
-msgid "Permission denied."
-msgstr "Permission refusée."
+msgid "More information about DistillPress"
+msgstr "Plus d'informations sur DistillPress"
+
+#: distillpress.php, includes/class-admin-settings.php, includes/class-meta-box.php
+msgid "DistillPress"
+msgstr "DistillPress"
 
 #: distillpress.php
-msgid "No content provided."
-msgstr "Aucun contenu fourni."
+msgid "View details"
+msgstr "Afficher les détails"
 
 #: distillpress.php
-msgid "Both summary and teaser are disabled in settings."
-msgstr "Le résumé et l'accroche sont tous deux désactivés dans les réglages."
+msgid "🐛 Report a Bug"
+msgstr "🐛 Signaler un bug"
+
+#: distillpress.php
+msgid "🐛 Report a Bug (install Bug Reporter)"
+msgstr "🐛 Signaler un bug (installer Bug Reporter)"
 
 #: distillpress.php
 msgid "API key not configured. Please go to Settings > DistillPress."
 msgstr "Clé API non configurée. Veuillez aller dans Réglages > DistillPress."
 
 #: distillpress.php
+msgid "Permission denied."
+msgstr "Permission refusée."
+
+#: distillpress.php
+msgid "Both summary and teaser are disabled in settings."
+msgstr "Le résumé et l'accroche sont tous deux désactivés dans les réglages."
+
+#: distillpress.php
+msgid "No content provided."
+msgstr "Aucun contenu fourni."
+
+#. translators: 1: total max characters, 2: max characters per point
+#: distillpress.php
+msgid "The total summary must not exceed %1$d characters (approximately %2$d characters per point)."
+msgstr "Le résumé total ne doit pas dépasser %1$d caractères (environ %2$d caractères par point)."
+
+#: distillpress.php
+msgid "ONLY use information explicitly stated in the source text"
+msgstr "Utilisez UNIQUEMENT les informations explicitement présentes dans le texte source"
+
+#: distillpress.php
+msgid "NEVER add interpretations, opinions, or external knowledge"
+msgstr "N'ajoutez JAMAIS d'interprétations, d'opinions ou de connaissances extérieures"
+
+#: distillpress.php
+msgid "NEVER hallucinate or invent information not present in the text"
+msgstr "N'inventez JAMAIS d'informations absentes du texte"
+
+#: distillpress.php
+msgid "Use neutral, objective language for the summary"
+msgstr "Utilisez un langage neutre et objectif pour le résumé"
+
+#: distillpress.php
+msgid "Make the teaser engaging but still factual"
+msgstr "Rendez l'accroche engageante tout en restant factuel"
+
+#: distillpress.php
+msgid "Preserve the original meaning accurately"
+msgstr "Préservez fidèlement le sens original"
+
+#: distillpress.php
+msgid "Respond in the SAME LANGUAGE as the source text"
+msgstr "Répondez dans la MÊME LANGUE que le texte source"
+
+#: distillpress.php
+msgid "Return your response in JSON format with \"summary\" and \"teaser\" fields"
+msgstr "Renvoyez votre réponse au format JSON avec les champs \"summary\" et \"teaser\""
+
+#: distillpress.php
+msgid "Return your response in JSON format with \"summary\" field"
+msgstr "Renvoyez votre réponse au format JSON avec le champ \"summary\""
+
+#: distillpress.php
+msgid "Return your response in JSON format with \"teaser\" field"
+msgstr "Renvoyez votre réponse au format JSON avec le champ \"teaser\""
+
+#: distillpress.php
 msgid "You are a precise summarization assistant. Your task is to create factual content based EXCLUSIVELY on the provided text. You must:"
 msgstr "Vous êtes un assistant de synthèse précis. Votre tâche est de créer du contenu factuel basé EXCLUSIVEMENT sur le texte fourni. Vous devez :"
 
 #: distillpress.php
-msgid "1. ONLY use information explicitly stated in the source text"
-msgstr "1. Utiliser UNIQUEMENT les informations explicitement mentionnées dans le texte source"
-
-#: distillpress.php
-msgid "2. NEVER add interpretations, opinions, or external knowledge"
-msgstr "2. Ne JAMAIS ajouter d'interprétations, d'opinions ou de connaissances externes"
-
-#: distillpress.php
-msgid "3. NEVER hallucinate or invent information not present in the text"
-msgstr "3. Ne JAMAIS inventer ou halluciner des informations non présentes dans le texte"
-
-#: distillpress.php
-msgid "4. Use neutral, objective language for the summary"
-msgstr "4. Utiliser un langage neutre et objectif pour le résumé"
-
-#: distillpress.php
-msgid "5. Make the teaser engaging but still factual"
-msgstr "5. Rendre l'accroche attrayante tout en restant factuelle"
-
-#: distillpress.php
-msgid "6. Preserve the original meaning accurately"
-msgstr "6. Préserver fidèlement le sens original"
-
-#: distillpress.php
-msgid "7. Respond in the SAME LANGUAGE as the source text"
-msgstr "7. Répondre dans la MÊME LANGUE que le texte source"
-
-#: distillpress.php
-msgid "8. Return your response in JSON format with \"summary\" and \"teaser\" fields"
-msgstr "8. Retourner votre réponse au format JSON avec les champs \"summary\" et \"teaser\""
-
-#: distillpress.php
-msgid "8. Return your response in JSON format with \"summary\" field"
-msgstr "8. Retourner votre réponse au format JSON avec le champ \"summary\""
-
-#: distillpress.php
-msgid "8. Return your response in JSON format with \"teaser\" field"
-msgstr "8. Retourner votre réponse au format JSON avec le champ \"teaser\""
+msgid "Additional instructions:"
+msgstr "Instructions supplémentaires :"
 
 #: distillpress.php
 msgid "Analyze the following article and provide both a summary and a teaser."
@@ -181,11 +207,7 @@ msgstr "Analysez l'article suivant et fournissez une accroche."
 msgid "SUMMARY: Create exactly %d key bullet points."
 msgstr "RÉSUMÉ : Créer exactement %d points clés."
 
-#. translators: 1: total max characters, 2: max characters per point
-#: distillpress.php
-msgid "The total summary must not exceed %1$d characters (approximately %2$d characters per point)."
-msgstr "Le résumé total ne doit pas dépasser %1$d caractères (environ %2$d caractères par point)."
-
+#. translators: %d: number of bullet points
 #: distillpress.php
 msgid "- Each point must be a complete, standalone statement"
 msgstr "- Chaque point doit être une déclaration complète et autonome"
@@ -223,8 +245,8 @@ msgid "Source text:"
 msgstr "Texte source :"
 
 #: distillpress.php
-msgid "Additional instructions:"
-msgstr "Instructions supplémentaires :"
+msgid "No categories available."
+msgstr "Aucune catégorie disponible."
 
 #: distillpress.php
 msgid "You are a content categorization assistant. Your task is to analyze text and select the most relevant categories from a predefined list. You must:"
@@ -255,6 +277,7 @@ msgstr "5. Ordonner les catégories par pertinence (la plus pertinente en premie
 msgid "Select up to %1$d most relevant categories for the following content from this list: %2$s"
 msgstr "Sélectionnez jusqu'à %1$d catégories les plus pertinentes pour le contenu suivant dans cette liste : %2$s"
 
+#. translators: 1: maximum number of categories, 2: comma-separated list of available categories
 #: distillpress.php
 msgid "Return ONLY a JSON array of category names. Example: [\"Category1\", \"Category2\"]"
 msgstr "Retourner UNIQUEMENT un tableau JSON de noms de catégories. Exemple : [\"Catégorie1\", \"Catégorie2\"]"
@@ -264,10 +287,6 @@ msgid "Content to categorize:"
 msgstr "Contenu à catégoriser :"
 
 #: distillpress.php
-msgid "No categories available."
-msgstr "Aucune catégorie disponible."
-
-#: distillpress.php
 msgid "Failed to parse category response."
 msgstr "Échec de l'analyse de la réponse de catégorie."
 
@@ -275,47 +294,41 @@ msgstr "Échec de l'analyse de la réponse de catégorie."
 msgid "Please enter your API key first."
 msgstr "Veuillez d'abord entrer votre clé API."
 
-#: includes/class-gemini-api-service.php
-msgid "Gemini API key is required"
-msgstr "La clé API Gemini est requise"
+#: distillpress.php
+msgid "No model returned by the API. Please check your API key."
+msgstr "Aucun modèle renvoyé par l'API. Vérifiez votre clé API."
 
-#. translators: %d: HTTP status code
-#: includes/class-gemini-api-service.php
-msgid "Gemini API returned status %d"
-msgstr "L'API Gemini a renvoyé l'erreur %d"
+#. translators: %s: provider name
+#: includes/class-api-service.php
+msgid "%s API key is required"
+msgstr "La clé API %s est requise"
 
-#: includes/class-gemini-api-service.php
-msgid "Invalid Gemini API response"
-msgstr "Réponse API Gemini invalide"
+#. translators: %s: provider name
+#: includes/class-api-service.php
+msgid "Invalid %s API response"
+msgstr "Réponse invalide de l'API %s"
+
+#. translators: 1: provider name, 2: HTTP status code, 3: error message returned by the API
+#: includes/class-api-service.php
+msgid "%1$s API returned status %2$d: %3$s"
+msgstr "L'API %1$s a renvoyé le statut %2$d : %3$s"
+
+#. translators: 1: provider name, 2: HTTP status code
+#: includes/class-api-service.php
+msgid "%1$s API returned status %2$d"
+msgstr "L'API %1$s a renvoyé le statut %2$d"
 
 #: includes/class-poe-api-service.php
 msgid "API key is required"
 msgstr "La clé API est requise"
 
-#. translators: %d: HTTP status code
-#: includes/class-poe-api-service.php
-msgid "API returned status %d"
-msgstr "L'API a renvoyé l'erreur %d"
-
 #: includes/class-poe-api-service.php
 msgid "Failed to parse API response"
 msgstr "Échec de l'analyse de la réponse API"
 
-#: includes/class-poe-api-service.php
-msgid "Invalid API response"
-msgstr "Réponse API invalide"
-
-#: includes/class-github-updater.php
-msgid "Unable to rename the update folder. Please retry or update manually."
-msgstr "Impossible de renommer le dossier de mise à jour. Veuillez réessayer ou mettre à jour manuellement."
-
 #: includes/class-admin-settings.php
 msgid "DistillPress Settings"
 msgstr "Réglages DistillPress"
-
-#: includes/class-admin-settings.php distillpress.php
-msgid "DistillPress"
-msgstr "DistillPress"
 
 #: includes/class-admin-settings.php
 msgid "API Settings"
@@ -342,6 +355,10 @@ msgid "Gemini Model"
 msgstr "Modèle Gemini"
 
 #: includes/class-admin-settings.php
+msgid "Reasoning Effort"
+msgstr "Effort de raisonnement"
+
+#: includes/class-admin-settings.php
 msgid "Summary Settings"
 msgstr "Réglages du résumé"
 
@@ -358,16 +375,8 @@ msgid "Enable Summary"
 msgstr "Activer le résumé"
 
 #: includes/class-admin-settings.php
-msgid "Generate bullet point summaries"
-msgstr "Générer le résumé"
-
-#: includes/class-admin-settings.php
 msgid "Enable Teaser"
 msgstr "Activer l'accroche"
-
-#: includes/class-admin-settings.php
-msgid "Generate teaser paragraphs"
-msgstr "Générer l'accroche"
 
 #: includes/class-admin-settings.php
 msgid "Custom Instructions"
@@ -382,8 +391,8 @@ msgid "Default Max Categories"
 msgstr "Maximum de catégories par défaut"
 
 #: includes/class-admin-settings.php
-msgid "Save Settings"
-msgstr "Enregistrer les réglages"
+msgid "Default Category"
+msgstr "Catégorie par défaut"
 
 #. translators: %s: constant name
 #: includes/class-admin-settings.php
@@ -394,6 +403,10 @@ msgstr "Votre clé API POE est définie dans wp-config.php à l'aide de la const
 #: includes/class-admin-settings.php
 msgid "Your Gemini API key is defined in wp-config.php using the %s constant."
 msgstr "Votre clé API Gemini est définie dans wp-config.php à l'aide de la constante %s."
+
+#: includes/class-admin-settings.php
+msgid "Save Settings"
+msgstr "Enregistrer les réglages"
 
 #: includes/class-admin-settings.php
 msgid "Choose your AI provider and configure the connection settings."
@@ -422,10 +435,6 @@ msgstr "Configurez les paramètres par défaut pour la sélection automatique de
 #: includes/class-admin-settings.php
 msgid "API key is defined in wp-config.php and cannot be changed here."
 msgstr "La clé API est définie dans wp-config.php et ne peut pas être modifiée ici."
-
-#: includes/class-admin-settings.php
-msgid "Show"
-msgstr "Afficher"
 
 #: includes/class-admin-settings.php
 msgid "Enter your POE API key. Get it from poe.com → Settings → API."
@@ -461,16 +470,40 @@ msgid "Select the Gemini model to use. Flash is faster and cheaper; Pro is more 
 msgstr "Sélectionnez le modèle Gemini à utiliser. Flash est plus rapide et moins cher ; Pro est plus performant."
 
 #: includes/class-admin-settings.php
+msgid "Model default"
+msgstr "Valeur par défaut du modèle"
+
+#: includes/class-admin-settings.php
+msgid "Off (no reasoning)"
+msgstr "Désactivé (aucun raisonnement)"
+
+#: includes/class-admin-settings.php
+msgid "Low"
+msgstr "Faible"
+
+#: includes/class-admin-settings.php
+msgid "Medium"
+msgstr "Moyen"
+
+#: includes/class-admin-settings.php
+msgid "High"
+msgstr "Élevé"
+
+#: includes/class-admin-settings.php
+msgid "Maximum"
+msgstr "Maximum"
+
+#: includes/class-admin-settings.php
+msgid "How much thinking the model should spend before answering. More reasoning costs more and takes longer."
+msgstr "Temps de réflexion accordé au modèle avant de répondre. Plus de raisonnement coûte plus cher et prend plus de temps."
+
+#: includes/class-admin-settings.php
+msgid "Only sent to models that accept it; the others keep their own default."
+msgstr "Envoyé uniquement aux modèles qui l'acceptent ; les autres conservent leur réglage par défaut."
+
+#: includes/class-admin-settings.php
 msgid "Default number of bullet points for the summary (1-20)."
 msgstr "Nombre de puces par défaut pour le résumé (1-20)."
-
-#: distillpress.php
-msgid "More information about DistillPress"
-msgstr "Plus d'informations sur DistillPress"
-
-#: distillpress.php
-msgid "View details"
-msgstr "Afficher les détails"
 
 #: includes/class-admin-settings.php
 msgid "Target summary length as a percentage of the original content. Set to 0 to disable this constraint."
@@ -485,16 +518,20 @@ msgid "Maximum number of categories to auto-select (1-20)."
 msgstr "Nombre maximum de catégories à sélectionner automatiquement (1-20)."
 
 #: includes/class-admin-settings.php
-msgid "Default Category"
-msgstr "Catégorie par défaut"
-
-#: includes/class-admin-settings.php
 msgid "None"
 msgstr "Aucune"
 
 #: includes/class-admin-settings.php
 msgid "This category will always be applied in addition to AI-selected categories."
 msgstr "Cette catégorie sera toujours appliquée en plus des catégories sélectionnées par l'IA."
+
+#: includes/class-admin-settings.php
+msgid "Generate bullet point summaries"
+msgstr "Générer le résumé"
+
+#: includes/class-admin-settings.php
+msgid "Generate teaser paragraphs"
+msgstr "Générer l'accroche"
 
 #: includes/class-admin-settings.php
 msgid "Example: Always mention the author name. Use a formal tone."
@@ -536,9 +573,15 @@ msgstr "Jetons"
 msgid "N/A"
 msgstr "N/D"
 
+#. translators: %s: link to settings page
 #: includes/class-meta-box.php
-msgid "Summary & Teaser"
-msgstr "Résumé et accroche"
+msgid "Please configure your API key in the %s."
+msgstr "Veuillez configurer votre clé API dans les %s."
+
+#. translators: %s: link to settings page
+#: includes/class-meta-box.php
+msgid "settings"
+msgstr "réglages"
 
 #: includes/class-meta-box.php
 msgid "Generate Summary & Teaser"
@@ -563,6 +606,10 @@ msgstr "Générer l'accroche"
 #: includes/class-meta-box.php
 msgid "Regenerate Teaser"
 msgstr "Régénérer l'accroche"
+
+#: includes/class-meta-box.php
+msgid "Summary & Teaser"
+msgstr "Résumé et accroche"
 
 #: includes/class-meta-box.php
 msgid "Summary"
@@ -604,11 +651,7 @@ msgstr "Max. catégories :"
 msgid "Finding..."
 msgstr "Recherche..."
 
-#. translators: %s: link to settings page
-#: includes/class-meta-box.php
-msgid "Please configure your API key in the %s."
-msgstr "Veuillez configurer votre clé API dans les %s."
+#: includes/class-github-updater.php
+msgid "Unable to rename the update folder. Please retry or update manually."
+msgstr "Impossible de renommer le dossier de mise à jour. Veuillez réessayer ou mettre à jour manuellement."
 
-#: includes/class-meta-box.php
-msgid "settings"
-msgstr "réglages"

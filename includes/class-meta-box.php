@@ -33,10 +33,6 @@ class DistillPress_Meta_Box
 	public static function init()
 	{
 		add_action('add_meta_boxes', array(__CLASS__, 'add_meta_box'));
-		add_action('save_post', array(__CLASS__, 'save_meta'), 10, 2);
-
-		// Allow filtering of supported post types
-		self::$supported_post_types = apply_filters('distillpress_supported_post_types', self::$supported_post_types);
 	}
 
 	/**
@@ -44,7 +40,11 @@ class DistillPress_Meta_Box
 	 */
 	public static function add_meta_box()
 	{
-		foreach (self::$supported_post_types as $post_type) {
+		// Filtered here, not on init(), so themes and plugins hooking on `init`
+		// are still in time to change the list.
+		$post_types = apply_filters('distillpress_supported_post_types', self::$supported_post_types);
+
+		foreach ($post_types as $post_type) {
 			add_meta_box(
 				'distillpress_meta_box',
 				__('DistillPress', 'distillpress'),
@@ -53,32 +53,6 @@ class DistillPress_Meta_Box
 				'side',
 				'high'
 			);
-		}
-	}
-
-	/**
-	 * Save post meta data.
-	 *
-	 * @param int     $post_id Post ID.
-	 * @param WP_Post $post    Post object.
-	 */
-	public static function save_meta($post_id, $post)
-	{
-		// Verify nonce if set (for manual saves)
-		if (isset($_POST['distillpress_meta_nonce'])) {
-			if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['distillpress_meta_nonce'])), 'distillpress_save_meta')) {
-				return;
-			}
-		}
-
-		// Check autosave
-		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-			return;
-		}
-
-		// Check permissions
-		if (!current_user_can('edit_post', $post_id)) {
-			return;
 		}
 	}
 
@@ -136,7 +110,6 @@ class DistillPress_Meta_Box
 
 		$button_text = $has_saved ? $regenerate_text : $generate_text;
 
-		wp_nonce_field('distillpress_save_meta', 'distillpress_meta_nonce');
 		?>
 		<div class="distillpress-metabox" data-saved-summary="<?php echo esc_attr($saved_summary); ?>"
 			data-saved-teaser="<?php echo esc_attr($saved_teaser); ?>"
@@ -192,7 +165,8 @@ class DistillPress_Meta_Box
 							<h5><?php esc_html_e('Summary', 'distillpress'); ?></h5>
 							<div class="distillpress-result-content distillpress-summary-content"></div>
 							<div class="distillpress-result-actions">
-								<button type="button" class="button button-small" id="distillpress-copy-summary">
+								<button type="button" class="button button-small distillpress-copy"
+									data-source="#distillpress-summary-result .distillpress-summary">
 									<?php esc_html_e('Copy', 'distillpress'); ?>
 								</button>
 							</div>
@@ -201,7 +175,8 @@ class DistillPress_Meta_Box
 							<h5><?php esc_html_e('Teaser', 'distillpress'); ?></h5>
 							<div class="distillpress-result-content distillpress-teaser-content"></div>
 							<div class="distillpress-result-actions">
-								<button type="button" class="button button-small" id="distillpress-copy-teaser">
+								<button type="button" class="button button-small distillpress-copy"
+									data-source="#distillpress-summary-result .distillpress-teaser">
 									<?php esc_html_e('Copy', 'distillpress'); ?>
 								</button>
 							</div>

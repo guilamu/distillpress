@@ -14,66 +14,70 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 }
 
 /**
- * Clean up plugin data.
+ * Options created by the plugin.
+ *
+ * @return array Option names.
  */
-function distillpress_uninstall()
+function distillpress_uninstall_options()
 {
-	// Delete plugin options
-	delete_option('distillpress_api_provider');
-	delete_option('distillpress_api_key');
-	delete_option('distillpress_gemini_api_key');
-	delete_option('distillpress_gemini_model');
-	delete_option('distillpress_model');
-	delete_option('distillpress_default_num_points');
-	delete_option('distillpress_default_reduction_percent');
-	delete_option('distillpress_default_max_categories');
-	delete_option('distillpress_default_category');
-	delete_option('distillpress_enable_summary');
-	delete_option('distillpress_enable_teaser');
-	delete_option('distillpress_custom_prompt');
+	return array(
+		'distillpress_api_provider',
+		'distillpress_api_key',
+		'distillpress_gemini_api_key',
+		'distillpress_gemini_model',
+		'distillpress_model',
+		'distillpress_reasoning_effort',
+		'distillpress_default_num_points',
+		'distillpress_default_reduction_percent',
+		'distillpress_default_max_categories',
+		'distillpress_default_category',
+		'distillpress_enable_summary',
+		'distillpress_enable_teaser',
+		'distillpress_custom_prompt',
+		'distillpress_api_log',
+	);
+}
 
-	// Delete transients
+/**
+ * Remove every trace of the plugin from the current site.
+ */
+function distillpress_uninstall_site()
+{
+	global $wpdb;
+
+	foreach (distillpress_uninstall_options() as $option) {
+		delete_option($option);
+	}
+
 	delete_transient('distillpress_github_release');
 
-	// Delete model cache transients (we need to find them by pattern)
-	global $wpdb;
+	// Model list transients are keyed by a hash of the API key.
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
-			'%_transient_distillpress_models_%',
-			'%_transient_timeout_distillpress_models_%'
+			$wpdb->esc_like('_transient_distillpress_models_') . '%',
+			$wpdb->esc_like('_transient_timeout_distillpress_models_') . '%'
 		)
 	);
 
-	// Delete all post meta
-	$wpdb->delete($wpdb->postmeta, array('meta_key' => '_distillpress_summary'));
-	$wpdb->delete($wpdb->postmeta, array('meta_key' => '_distillpress_teaser'));
+	delete_post_meta_by_key('_distillpress_summary');
+	delete_post_meta_by_key('_distillpress_teaser');
+}
 
-	// For multisite, clean up each site
-	if (is_multisite()) {
-		$sites = get_sites(array('fields' => 'ids'));
+/**
+ * Clean up plugin data, on every site of the network when relevant.
+ */
+function distillpress_uninstall()
+{
+	if (!is_multisite()) {
+		distillpress_uninstall_site();
+		return;
+	}
 
-		foreach ($sites as $site_id) {
-			switch_to_blog($site_id);
-
-			delete_option('distillpress_api_key');
-			delete_option('distillpress_model');
-			delete_option('distillpress_default_num_points');
-			delete_option('distillpress_default_reduction_percent');
-			delete_option('distillpress_default_max_categories');
-			delete_option('distillpress_default_category');
-			delete_option('distillpress_enable_summary');
-			delete_option('distillpress_enable_teaser');
-			delete_option('distillpress_custom_prompt');
-
-			delete_transient('distillpress_github_release');
-
-			// Delete all post meta for this site
-			$wpdb->delete($wpdb->postmeta, array('meta_key' => '_distillpress_summary'));
-			$wpdb->delete($wpdb->postmeta, array('meta_key' => '_distillpress_teaser'));
-
-			restore_current_blog();
-		}
+	foreach (get_sites(array('fields' => 'ids')) as $site_id) {
+		switch_to_blog($site_id);
+		distillpress_uninstall_site();
+		restore_current_blog();
 	}
 }
 
