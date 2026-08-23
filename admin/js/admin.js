@@ -101,6 +101,9 @@
             // Refresh models button (POE)
             $(document).on('click', '#distillpress-refresh-models', this.refreshModels.bind(this));
 
+            // API key field: allow refreshing models before saving the key
+            $(document).on('input', '#distillpress_api_key', this.toggleRefreshButton.bind(this));
+
             // API provider selector
             $(document).on('change', '#distillpress_api_provider', this.onProviderChange.bind(this));
         },
@@ -111,6 +114,9 @@
         initSettingsPage: function() {
             // Apply initial provider visibility
             this.applyProviderVisibility();
+
+            // Keep the refresh button in sync with the API key field
+            this.toggleRefreshButton();
 
             // Auto-load models if API key exists on settings page (POE only)
             var provider = $('#distillpress_api_provider').val() || 'poe';
@@ -469,58 +475,105 @@
         },
 
         /**
+         * Enable or disable the refresh button depending on the API key field.
+         */
+        toggleRefreshButton: function() {
+            var $btn = $('#distillpress-refresh-models');
+
+            if (!$btn.length) {
+                return;
+            }
+
+            var $input = $('#distillpress_api_key');
+
+            // No input means the key comes from wp-config.php.
+            $btn.prop('disabled', $input.length ? $.trim($input.val()) === '' : false);
+        },
+
+        /**
          * Refresh available models from API.
          *
          * @param {Event} e Click event (optional).
          */
         refreshModels: function(e) {
+            var manual = false;
+
             if (e) {
                 e.preventDefault();
+                manual = true;
             }
 
+            var self = this;
             var $btn = $('#distillpress-refresh-models');
             var $select = $('#distillpress_model');
             var $loading = $('#distillpress-models-loading');
+            var $message = $('#distillpress-models-message');
             var currentValue = $select.val();
 
             $btn.prop('disabled', true);
             $loading.show();
+            $message.hide();
 
             $.ajax({
                 url: distillpressData.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'distillpress_get_models',
-                    nonce: distillpressData.nonce
+                    nonce: distillpressData.nonce,
+                    provider: 'poe',
+                    // A click must hit the API again, not the cached list.
+                    force: manual ? '1' : '0',
+                    api_key: $('#distillpress_api_key').val() || ''
                 },
                 success: function(response) {
-                    if (response.success && response.data.models) {
-                        $select.empty();
-                        
-                        response.data.models.forEach(function(model) {
-                            var $option = $('<option>')
-                                .val(model.id)
-                                .text(model.name);
-                            
-                            if (model.id === currentValue) {
-                                $option.prop('selected', true);
-                            }
-                            
-                            $select.append($option);
-                        });
+                    if (!response.success || !response.data || !response.data.models) {
+                        var error = (response.data && response.data.message) || distillpressData.i18n.models_error;
+                        self.showMessage($message, error, 'error');
+                        return;
+                    }
 
-                        // If current value wasn't found, select first option
-                        if (!$select.find('option:selected').length && $select.find('option').length) {
-                            $select.find('option:first').prop('selected', true);
+                    var models = response.data.models;
+                    var found = false;
+
+                    $select.empty();
+
+                    models.forEach(function(model) {
+                        var $option = $('<option>')
+                            .val(model.id)
+                            .text(model.name);
+
+                        if (model.id === currentValue) {
+                            $option.prop('selected', true);
+                            found = true;
                         }
+
+                        $select.append($option);
+                    });
+
+                    // Keep the saved model selectable even when it is an older
+                    // version that the list no longer offers.
+                    if (!found && currentValue) {
+                        $('<option>')
+                            .val(currentValue)
+                            .text(currentValue)
+                            .prop('selected', true)
+                            .prependTo($select);
+                    }
+
+                    if (manual) {
+                        self.showMessage(
+                            $message,
+                            distillpressData.i18n.models_loaded.replace('%d', models.length),
+                            'success'
+                        );
                     }
                 },
                 error: function() {
-                    console.error('Failed to load models');
+                    self.showMessage($message, distillpressData.i18n.models_error, 'error');
                 },
                 complete: function() {
-                    $btn.prop('disabled', false);
                     $loading.hide();
+                    self.toggleRefreshButton();
                 }
             });
         },

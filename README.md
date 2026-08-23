@@ -82,6 +82,15 @@ Yes. Your API key stays server-side. You can also define it in `wp-config.php` u
 
 ## Changelog
 
+### 1.3.2
+- **Fixed:** "Refresh Models" now really queries POE again instead of returning the list cached one hour earlier
+- **Fixed:** Errors while loading models are shown next to the button instead of failing silently in the console
+- **Improved:** Only the latest version of each model is listed (Claude-Opus-4.8 instead of 4.5 to 4.8, GPT-5.4 instead of GPT-4o to GPT-5.4)
+- **Improved:** Image, video and audio models POE cannot use for text generation are no longer listed
+- **Improved:** The model saved in the settings stays selectable even when a newer version replaces it in the list
+- **Improved:** The version number is always part of the model label ("Claude-Sonnet-4.6", never a bare "Claude-Sonnet")
+- **Improved:** Models can be listed right after typing an API key, before saving the settings
+
 ### 1.3.1
 - **Improved:** GitHub auto-updater now parses local README.md for plugin details popup (Description, Installation, FAQ, Changelog tabs)
 - **Improved:** "View details" thickbox link added to plugin row meta

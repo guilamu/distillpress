@@ -176,6 +176,12 @@
     color: #0f5132;
 }
 
+#distillpress-models-message {
+    display: inline-block;
+    margin: 0 0 0 8px;
+    vertical-align: middle;
+}
+
 .distillpress-message-error {
     background: #f8d7da;
     border: 1px solid #f5c2c7;

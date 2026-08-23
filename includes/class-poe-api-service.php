@@ -30,23 +30,60 @@ class DistillPress_POE_API_Service
 	/**
 	 * Get available models from POE API.
 	 *
-	 * @param string $api_key    POE API key.
-	 * @param bool   $image_only Only return models supporting image input.
+	 * @param string $api_key     POE API key.
+	 * @param bool   $image_only  Only return models supporting image input.
+	 * @param bool   $latest_only Only keep the most recent version of each model.
+	 * @param bool   $force       Ignore the cached list and query the API again.
 	 * @return array|WP_Error Array of models or error.
 	 */
-	public static function get_models($api_key, $image_only = false)
+	public static function get_models($api_key, $image_only = false, $latest_only = true, $force = false)
 	{
 		if (empty($api_key)) {
 			return new WP_Error('missing_api_key', __('API key is required', 'distillpress'));
 		}
 
-		// Check cache first
-		$cache_key = 'distillpress_models_' . md5($api_key) . ($image_only ? '_img' : '');
-		$cached_models = get_transient($cache_key);
-		if (false !== $cached_models) {
-			return $cached_models;
+		$cache_key = self::get_models_cache_key($api_key, $image_only);
+
+		// The cache always holds the complete list; filtering happens on read.
+		$models = $force ? false : get_transient($cache_key);
+
+		if (false === $models) {
+			$models = self::fetch_models($api_key, $image_only);
+
+			if (is_wp_error($models)) {
+				return $models;
+			}
+
+			// Cache for 1 hour
+			if (!empty($models)) {
+				set_transient($cache_key, $models, HOUR_IN_SECONDS);
+			}
 		}
 
+		return $latest_only ? self::filter_latest_versions($models) : $models;
+	}
+
+	/**
+	 * Build the transient key holding the model list for an API key.
+	 *
+	 * @param string $api_key    POE API key.
+	 * @param bool   $image_only Image-capable models only.
+	 * @return string Transient key.
+	 */
+	private static function get_models_cache_key($api_key, $image_only)
+	{
+		return 'distillpress_models_' . md5($api_key) . ($image_only ? '_img' : '');
+	}
+
+	/**
+	 * Query the POE API for the list of usable models.
+	 *
+	 * @param string $api_key    POE API key.
+	 * @param bool   $image_only Only return models supporting image input.
+	 * @return array|WP_Error Array of models or error.
+	 */
+	private static function fetch_models($api_key, $image_only)
+	{
 		$response = wp_remote_get(
 			self::API_BASE_URL . '/v1/models',
 			array(
@@ -79,6 +116,10 @@ class DistillPress_POE_API_Service
 
 		$models = array();
 		foreach ($body['data'] ?? array() as $model) {
+			if (empty($model['id']) || !self::supports_chat_completions($model)) {
+				continue;
+			}
+
 			$input_modalities = $model['architecture']['input_modalities'] ?? array();
 
 			// Filter for image-capable models if requested
@@ -86,25 +127,206 @@ class DistillPress_POE_API_Service
 				continue;
 			}
 
+			$name = $model['metadata']['display_name'] ?? $model['id'];
+
 			$models[] = array(
 				'id' => $model['id'],
-				'name' => $model['metadata']['display_name'] ?? $model['id'],
+				'name' => self::add_version_to_name($model['id'], $name),
 				'supports_images' => in_array('image', $input_modalities, true),
 			);
 		}
 
-		// Sort alphabetically by name
+		return self::sort_models($models);
+	}
+
+	/**
+	 * Check that a model can be used for the chat completions the plugin sends.
+	 *
+	 * POE also lists image, video and audio models, which this plugin cannot use.
+	 *
+	 * @param array $model Raw model entry from the API.
+	 * @return bool True if the model accepts chat completions and returns text.
+	 */
+	private static function supports_chat_completions($model)
+	{
+		$endpoints = $model['supported_endpoints'] ?? null;
+
+		// Be permissive when the API does not advertise its endpoints.
+		if (is_array($endpoints) && !in_array('/v1/chat/completions', $endpoints, true)) {
+			return false;
+		}
+
+		$output_modalities = $model['architecture']['output_modalities'] ?? null;
+
+		if (is_array($output_modalities) && !in_array('text', $output_modalities, true)) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Make sure the version number stays visible in the model label.
+	 *
+	 * Only the latest release of each model is listed, so the label has to say
+	 * which one it is: "Claude-Sonnet-4.6", not "Claude-Sonnet". POE display
+	 * names usually already include it; this appends it when they do not.
+	 *
+	 * @param string $id   Model ID.
+	 * @param string $name Display name advertised by the API.
+	 * @return string Display name including the version.
+	 */
+	private static function add_version_to_name($id, $name)
+	{
+		$parsed = self::parse_model_id($id);
+
+		if (null === $parsed) {
+			return $name;
+		}
+
+		$version = $parsed['version']['token'];
+		$normalized = preg_replace('/[^a-z0-9.]/', '', strtolower($name));
+
+		if (false !== strpos($normalized, $version)) {
+			return $name;
+		}
+
+		return $name . '-' . $version;
+	}
+
+	/**
+	 * Keep only the most recent version of each model family.
+	 *
+	 * POE exposes every past release (Claude-Opus-4.5 through 4.8, GPT-4o
+	 * through GPT-5.4, ...). Only the newest of each family is worth offering.
+	 *
+	 * @param array $models Models as returned by fetch_models().
+	 * @return array Filtered models.
+	 */
+	public static function filter_latest_versions($models)
+	{
+		if (!is_array($models)) {
+			return $models;
+		}
+
+		$unversioned = array();
+		$families = array();
+
+		foreach ($models as $model) {
+			$parsed = self::parse_model_id($model['id']);
+
+			// No version number in the ID: nothing to compare it against.
+			if (null === $parsed) {
+				$unversioned[] = $model;
+				continue;
+			}
+
+			$family = $parsed['family'];
+
+			if (!isset($families[$family]) || self::compare_versions($parsed['version'], $families[$family]['version']) > 0) {
+				$families[$family] = array(
+					'version' => $parsed['version'],
+					'model' => $model,
+				);
+			}
+		}
+
+		$filtered = $unversioned;
+		foreach ($families as $family) {
+			$filtered[] = $family['model'];
+		}
+
+		return self::sort_models($filtered);
+	}
+
+	/**
+	 * Split a model ID into a family key and a comparable version.
+	 *
+	 * "claude-opus-4.8" becomes family "claude|opus" with version 4.8, so it can
+	 * be compared with "claude-opus-4.5". Qualifiers such as "mini", "pro" or a
+	 * parameter count ("27b") stay part of the family and are never merged.
+	 *
+	 * @param string $id Model ID.
+	 * @return array|null Family key and version, or null when the ID has no version.
+	 */
+	private static function parse_model_id($id)
+	{
+		$tokens = preg_split('/[^a-z0-9.]+/', strtolower($id), -1, PREG_SPLIT_NO_EMPTY);
+		$version = null;
+		$family = array();
+
+		foreach ($tokens as $token) {
+			if (null === $version && preg_match('/^([a-z]*?)v?(\d+(?:\.\d+)*)([a-z]?)$/', $token, $matches)) {
+				// "70b", "128k" and "1m" are sizes or context windows, not versions.
+				if (!in_array($matches[3], array('b', 'k', 'm'), true)) {
+					$version = array(
+						'token' => $token,
+						'numbers' => array_map('intval', explode('.', $matches[2])),
+						'suffix' => $matches[3],
+					);
+
+					// Keep a leading letter ("o3", "k2") as part of the family.
+					if ('' !== $matches[1]) {
+						$family[] = $matches[1];
+					}
+
+					continue;
+				}
+			}
+
+			$family[] = $token;
+		}
+
+		if (null === $version || empty($family)) {
+			return null;
+		}
+
+		sort($family);
+
+		return array(
+			'family' => implode('|', $family),
+			'version' => $version,
+		);
+	}
+
+	/**
+	 * Compare two versions returned by parse_model_id().
+	 *
+	 * @param array $a First version.
+	 * @param array $b Second version.
+	 * @return int Negative if $a is older, positive if newer, 0 if equal.
+	 */
+	private static function compare_versions($a, $b)
+	{
+		$length = max(count($a['numbers']), count($b['numbers']));
+
+		for ($i = 0; $i < $length; $i++) {
+			$left = $a['numbers'][$i] ?? 0;
+			$right = $b['numbers'][$i] ?? 0;
+
+			if ($left !== $right) {
+				return $left < $right ? -1 : 1;
+			}
+		}
+
+		// "gpt-4o" is newer than "gpt-4".
+		return strcmp($a['suffix'], $b['suffix']);
+	}
+
+	/**
+	 * Sort models alphabetically by display name.
+	 *
+	 * @param array $models Models to sort.
+	 * @return array Sorted models.
+	 */
+	private static function sort_models($models)
+	{
 		usort(
 			$models,
 			function ($a, $b) {
 				return strcasecmp($a['name'], $b['name']);
 			}
 		);
-
-		// Cache for 1 hour
-		if (!empty($models)) {
-			set_transient($cache_key, $models, HOUR_IN_SECONDS);
-		}
 
 		return $models;
 	}

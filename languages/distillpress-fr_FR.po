@@ -2,7 +2,7 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: DistillPress 1.3.1\n"
+"Project-Id-Version: DistillPress 1.3.2\n"
 "Report-Msgid-Bugs-To: https://github.com/guilamu/distillpress/issues\n"
 "POT-Creation-Date: 2026-02-21T12:00:00+00:00\n"
 "PO-Revision-Date: 2026-03-31 14:02+0200\n"
@@ -82,6 +82,19 @@ msgstr "Aucune accroche générée."
 #: distillpress.php
 msgid "No summary generated."
 msgstr "Aucun résumé généré."
+
+#. translators: %d: number of models
+#: distillpress.php
+msgid "%d models loaded."
+msgstr "%d modèles chargés."
+
+#: distillpress.php
+msgid "Unable to load the model list."
+msgstr "Impossible de charger la liste des modèles."
+
+#: distillpress.php
+msgid "No model returned by the API. Please check your API key."
+msgstr "Aucun modèle renvoyé par l'API. Vérifiez votre clé API."
 
 #: distillpress.php
 msgid "Copied!"
@@ -436,8 +449,12 @@ msgid "Refresh Models"
 msgstr "Actualiser les modèles"
 
 #: includes/class-admin-settings.php
-msgid "Select the AI model to use. Click \"Refresh Models\" to load available models from POE."
-msgstr "Sélectionnez le modèle IA à utiliser. Cliquez sur « Actualiser les modèles » pour charger les modèles disponibles depuis POE."
+msgid "Select the AI model to use. Click \"Refresh Models\" to reload the list from POE."
+msgstr "Sélectionnez le modèle IA à utiliser. Cliquez sur « Actualiser les modèles » pour recharger la liste depuis POE."
+
+#: includes/class-admin-settings.php
+msgid "Only models usable for text generation are listed, and only the latest version of each one."
+msgstr "Seuls les modèles utilisables pour la génération de texte sont listés, et uniquement la dernière version de chacun."
 
 #: includes/class-admin-settings.php
 msgid "Select the Gemini model to use. Flash is faster and cheaper; Pro is more capable."

@@ -462,10 +462,7 @@ class DistillPress_Admin_Settings
 	public static function render_model_field()
 	{
 		$current_model = get_option('distillpress_model', 'gpt-4o-mini');
-		$api_key = get_option('distillpress_api_key', '');
-		if (defined('DISTILLPRESS_POE_API_KEY')) {
-			$api_key = DISTILLPRESS_POE_API_KEY;
-		}
+		$api_key = DistillPress::get_poe_api_key();
 		?>
 		<select id="distillpress_model" name="distillpress_model" class="regular-text">
 			<?php if (empty($api_key)): ?>
@@ -482,8 +479,11 @@ class DistillPress_Admin_Settings
 		<span id="distillpress-models-loading" style="display: none;">
 			<span class="spinner is-active" style="float: none; margin-top: 0;"></span>
 		</span>
+		<span id="distillpress-models-message" class="distillpress-message" style="display: none;"></span>
 		<p class="description">
-			<?php esc_html_e('Select the AI model to use. Click "Refresh Models" to load available models from POE.', 'distillpress'); ?>
+			<?php esc_html_e('Select the AI model to use. Click "Refresh Models" to reload the list from POE.', 'distillpress'); ?>
+			<br>
+			<?php esc_html_e('Only models usable for text generation are listed, and only the latest version of each one.', 'distillpress'); ?>
 		</p>
 		<?php
 	}

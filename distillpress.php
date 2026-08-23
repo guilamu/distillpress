@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.3.1
+ * Version:           1.3.2
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.3.1');
+define('DISTILLPRESS_VERSION', '1.3.2');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -165,6 +165,9 @@ final class DistillPress
 				'copied' => __('Copied!', 'distillpress'),
 				'no_teaser' => __('No teaser generated.', 'distillpress'),
 				'no_summary' => __('No summary generated.', 'distillpress'),
+				/* translators: %d: number of models */
+				'models_loaded' => __('%d models loaded.', 'distillpress'),
+				'models_error' => __('Unable to load the model list.', 'distillpress'),
 			),
 		);
 
@@ -239,6 +242,20 @@ final class DistillPress
 		if (defined('DISTILLPRESS_POE_API_KEY')) {
 			return DISTILLPRESS_POE_API_KEY;
 		}
+		return get_option('distillpress_api_key', '');
+	}
+
+	/**
+	 * Get the POE API key, whichever provider is currently selected.
+	 *
+	 * @return string POE API key.
+	 */
+	public static function get_poe_api_key()
+	{
+		if (defined('DISTILLPRESS_POE_API_KEY')) {
+			return DISTILLPRESS_POE_API_KEY;
+		}
+
 		return get_option('distillpress_api_key', '');
 	}
 
@@ -634,17 +651,30 @@ final class DistillPress
 			return;
 		}
 
-		// POE: requires API key to fetch models.
-		$api_key = self::get_api_key();
+		// A manual refresh must bypass the one hour cache, otherwise the button
+		// would return the exact same list it just displayed.
+		$force = isset($_POST['force']) && '1' === (string) $_POST['force'];
+		$latest_only = !isset($_POST['show_all']) || '1' !== (string) $_POST['show_all'];
+
+		$api_key = self::get_poe_api_key();
+
+		// Use the key typed in the form so models can be listed before saving.
+		if (!defined('DISTILLPRESS_POE_API_KEY') && !empty($_POST['api_key'])) {
+			$api_key = sanitize_text_field(wp_unslash($_POST['api_key']));
+		}
 
 		if (empty($api_key)) {
 			wp_send_json_error(array('message' => __('Please enter your API key first.', 'distillpress')));
 		}
 
-		$models = DistillPress_POE_API_Service::get_models($api_key);
+		$models = DistillPress_POE_API_Service::get_models($api_key, false, $latest_only, $force);
 
 		if (is_wp_error($models)) {
 			wp_send_json_error(array('message' => $models->get_error_message()));
+		}
+
+		if (empty($models)) {
+			wp_send_json_error(array('message' => __('No model returned by the API. Please check your API key.', 'distillpress')));
 		}
 
 		wp_send_json_success(array('models' => $models));
