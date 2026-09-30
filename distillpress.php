@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.4.0
+ * Version:           1.4.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.4.0');
+define('DISTILLPRESS_VERSION', '1.4.1');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -369,6 +369,111 @@ final class DistillPress
 	}
 
 	/**
+	 * Extract the plain text of a post content, whatever the editor that produced it.
+	 *
+	 * Divi 5 stores its layout as block comments (<!-- wp:divi/text {...} /-->) whose
+	 * text lives in the JSON attributes, so stripping tags alone would leave nothing.
+	 * Those blocks are converted back to HTML before stripping. Divi 4 shortcodes are
+	 * removed while keeping the text they wrap.
+	 *
+	 * @param string $raw_content Unslashed post content sent by the editor.
+	 * @return string Plain text.
+	 */
+	private function extract_plain_text($raw_content)
+	{
+		$content = $raw_content;
+
+		if (false !== strpos($content, '<!-- wp:divi/') && function_exists('parse_blocks')) {
+			$content = implode("\n\n", $this->extract_blocks_html(parse_blocks($content)));
+		}
+
+		// Divi 4 (and other builders) shortcodes: keep the inner text, drop the tags.
+		$content = preg_replace('/\[\/?et_pb_[^\]]*\]/', "\n", $content);
+
+		$content = wp_kses_post($content);
+		$content = wp_strip_all_tags($content);
+		$content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		$content = preg_replace("/[ \t]+/u", ' ', $content);
+		$content = preg_replace("/\s*\n\s*/u", "\n", $content);
+
+		return trim($content);
+	}
+
+	/**
+	 * Recursively collect the textual HTML of parsed blocks.
+	 *
+	 * @param array $blocks Blocks returned by parse_blocks().
+	 * @return string[] HTML fragments in document order.
+	 */
+	private function extract_blocks_html($blocks)
+	{
+		// Divi modules holding scripts/embeds rather than article text.
+		$skipped = array('divi/code', 'divi/fullwidth-code', 'divi/video', 'divi/map', 'divi/fullwidth-map');
+		$parts = array();
+
+		foreach ($blocks as $block) {
+			$name = isset($block['blockName']) ? (string) $block['blockName'] : '';
+
+			if (in_array($name, $skipped, true)) {
+				continue;
+			}
+
+			if (0 === strpos($name, 'divi/')) {
+				if (!empty($block['attrs'])) {
+					$this->collect_divi_inner_content($block['attrs'], $parts);
+				}
+			} elseif (!empty($block['innerContent'])) {
+				// Regular (Gutenberg / classic) block: keep its own HTML.
+				foreach ($block['innerContent'] as $chunk) {
+					if (is_string($chunk) && '' !== trim($chunk)) {
+						$parts[] = $chunk;
+					}
+				}
+			}
+
+			if (!empty($block['innerBlocks'])) {
+				$parts = array_merge($parts, $this->extract_blocks_html($block['innerBlocks']));
+			}
+		}
+
+		return $parts;
+	}
+
+	/**
+	 * Collect the desktop value of every "innerContent" attribute of a Divi 5 module
+	 * (text body, titles, button labels...).
+	 *
+	 * @param array    $attrs Block attributes.
+	 * @param string[] $parts Collected fragments (by reference).
+	 */
+	private function collect_divi_inner_content($attrs, &$parts)
+	{
+		foreach ($attrs as $key => $value) {
+			if (!is_array($value)) {
+				continue;
+			}
+
+			if ('innerContent' === $key) {
+				$desktop = isset($value['desktop']['value']) ? $value['desktop']['value'] : null;
+
+				if (is_string($desktop)) {
+					$parts[] = $desktop;
+				} elseif (is_array($desktop)) {
+					// e.g. buttons: {"text": "...", "linkUrl": "..."}.
+					foreach (array('title', 'text') as $text_key) {
+						if (isset($desktop[$text_key]) && is_string($desktop[$text_key])) {
+							$parts[] = $desktop[$text_key];
+						}
+					}
+				}
+				continue;
+			}
+
+			$this->collect_divi_inner_content($value, $parts);
+		}
+	}
+
+	/**
 	 * AJAX handler: Generate summary.
 	 */
 	public function ajax_generate_summary()
@@ -379,7 +484,8 @@ final class DistillPress
 			wp_send_json_error(array('message' => __('Permission denied.', 'distillpress')));
 		}
 
-		$content = isset($_POST['content']) ? wp_kses_post(wp_unslash($_POST['content'])) : '';
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in extract_plain_text().
+		$plain_content = isset($_POST['content']) ? $this->extract_plain_text(wp_unslash($_POST['content'])) : '';
 		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
 		$num_points = isset($_POST['num_points']) ? absint($_POST['num_points']) : 3;
 		$num_points = min(max($num_points, 1), 20);
@@ -395,12 +501,10 @@ final class DistillPress
 			wp_send_json_error(array('message' => __('Both summary and teaser are disabled in settings.', 'distillpress')));
 		}
 
-		if (empty($content)) {
+		if ('' === $plain_content) {
 			wp_send_json_error(array('message' => __('No content provided.', 'distillpress')));
 		}
 
-		// Strip HTML for analysis.
-		$plain_content = wp_strip_all_tags($content);
 		$content_length = mb_strlen($plain_content);
 
 		// Calculate max characters if reduction percentage is set.
@@ -548,12 +652,13 @@ final class DistillPress
 			wp_send_json_error(array('message' => __('Permission denied.', 'distillpress')));
 		}
 
-		$content = isset($_POST['content']) ? wp_kses_post(wp_unslash($_POST['content'])) : '';
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in extract_plain_text().
+		$plain_content = isset($_POST['content']) ? $this->extract_plain_text(wp_unslash($_POST['content'])) : '';
 		$max_categories = isset($_POST['max_categories']) ? absint($_POST['max_categories']) : 3;
 		$max_categories = min(max($max_categories, 1), 20); // Enforce 1-20 range.
 		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
 
-		if (empty($content)) {
+		if ('' === $plain_content) {
 			wp_send_json_error(array('message' => __('No content provided.', 'distillpress')));
 		}
 
@@ -590,7 +695,6 @@ final class DistillPress
 		}
 
 		$categories_list = implode(', ', $category_names);
-		$plain_content = wp_strip_all_tags($content);
 
 		// Build prompt for category selection
 		$system_prompt = __('You are a content categorization assistant. Your task is to analyze text and select the most relevant categories from a predefined list. You must:', 'distillpress') . "\n\n" .
