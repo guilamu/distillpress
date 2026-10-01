@@ -105,6 +105,9 @@ Yes. Your API key stays server-side. You can also define it in `wp-config.php` u
 
 ## Changelog
 
+### 1.5.0 - 2026-10-01
+- **New:** `distillpress()->generate( $content, $args )` public method, so other plugins can generate a summary and/or teaser without the editor (e.g. `array( 'summary' => false )` for a teaser only). The editor button uses the same method
+
 ### 1.4.1 - 2026-09-30
 - **Fixed:** Divi 5 compatibility: the article text stored in Divi 5 blocks (`<!-- wp:divi/... -->`) is now extracted for the summary, teaser and categorization (Code modules are ignored)
 - **Improved:** Divi 4 shortcodes are removed from the text sent to the AI

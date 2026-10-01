@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.4.1
+ * Version:           1.5.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.4.1');
+define('DISTILLPRESS_VERSION', '1.5.0');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -474,35 +474,49 @@ final class DistillPress
 	}
 
 	/**
-	 * AJAX handler: Generate summary.
+	 * Generate a summary and/or a teaser from a post content.
+	 *
+	 * Used by the editor button (AJAX) and available to other plugins, which can create
+	 * a teaser without going through the editor:
+	 *
+	 *     $texts = distillpress()->generate($html, array('summary' => false));
+	 *
+	 * @param string $raw_content Post content (HTML, blocks or Divi layout).
+	 * @param array  $args {
+	 *     Optional. Overrides of the plugin settings.
+	 *
+	 *     @type bool $summary           Generate the summary. Default: the "Enable summary" setting.
+	 *     @type bool $teaser            Generate the teaser. Default: the "Enable teaser" setting.
+	 *     @type int  $num_points        Number of bullet points (1-20). Default: the plugin setting.
+	 *     @type int  $reduction_percent Maximum summary length, in % of the content (0 = no limit).
+	 * }
+	 * @return array|WP_Error Array with "summary" and "teaser" keys (empty strings when not generated).
 	 */
-	public function ajax_generate_summary()
+	public function generate($raw_content, $args = array())
 	{
-		check_ajax_referer('distillpress_nonce', 'nonce');
+		$args = wp_parse_args(
+			$args,
+			array(
+				'summary'           => (bool) get_option('distillpress_enable_summary', true),
+				'teaser'            => (bool) get_option('distillpress_enable_teaser', true),
+				'num_points'        => (int) get_option('distillpress_default_num_points', 3),
+				'reduction_percent' => (int) get_option('distillpress_default_reduction_percent', 0),
+			)
+		);
 
-		if (!current_user_can('edit_posts')) {
-			wp_send_json_error(array('message' => __('Permission denied.', 'distillpress')));
-		}
-
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in extract_plain_text().
-		$plain_content = isset($_POST['content']) ? $this->extract_plain_text(wp_unslash($_POST['content'])) : '';
-		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
-		$num_points = isset($_POST['num_points']) ? absint($_POST['num_points']) : 3;
-		$num_points = min(max($num_points, 1), 20);
-		$reduction_percent = isset($_POST['reduction_percent']) ? absint($_POST['reduction_percent']) : 0;
-		$reduction_percent = min($reduction_percent, 100);
-
-		// Get settings for what to generate.
-		$enable_summary = get_option('distillpress_enable_summary', true);
-		$enable_teaser = get_option('distillpress_enable_teaser', true);
+		$plain_content = $this->extract_plain_text((string) $raw_content);
+		$enable_summary = (bool) $args['summary'];
+		$enable_teaser = (bool) $args['teaser'];
+		$num_points = min(max(absint($args['num_points']), 1), 20);
+		$reduction_percent = min(absint($args['reduction_percent']), 100);
 
 		// If both are disabled, return error.
 		if (!$enable_summary && !$enable_teaser) {
-			wp_send_json_error(array('message' => __('Both summary and teaser are disabled in settings.', 'distillpress')));
+			return new WP_Error('distillpress_disabled', __('Both summary and teaser are disabled in settings.', 'distillpress'));
 		}
 
 		if ('' === $plain_content) {
-			wp_send_json_error(array('message' => __('No content provided.', 'distillpress')));
+			return new WP_Error('distillpress_empty', __('No content provided.', 'distillpress'));
 		}
 
 		$content_length = mb_strlen($plain_content);
@@ -604,7 +618,7 @@ final class DistillPress
 		$result = self::request_completion($system_prompt, $user_prompt, 0.4, 2500, 'summary');
 
 		if (is_wp_error($result)) {
-			wp_send_json_error(array('message' => $result->get_error_message()));
+			return $result;
 		}
 
 		// Parse the JSON response.
@@ -622,6 +636,47 @@ final class DistillPress
 				$summary = trim($result);
 			}
 		}
+
+		return array(
+			'summary' => $summary,
+			'teaser' => $teaser,
+		);
+	}
+
+	/**
+	 * AJAX handler: Generate summary.
+	 */
+	public function ajax_generate_summary()
+	{
+		check_ajax_referer('distillpress_nonce', 'nonce');
+
+		if (!current_user_can('edit_posts')) {
+			wp_send_json_error(array('message' => __('Permission denied.', 'distillpress')));
+		}
+
+		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+
+		// Get settings for what to generate.
+		$enable_summary = (bool) get_option('distillpress_enable_summary', true);
+		$enable_teaser = (bool) get_option('distillpress_enable_teaser', true);
+
+		$texts = $this->generate(
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in extract_plain_text().
+			isset($_POST['content']) ? wp_unslash($_POST['content']) : '',
+			array(
+				'summary'           => $enable_summary,
+				'teaser'            => $enable_teaser,
+				'num_points'        => isset($_POST['num_points']) ? absint($_POST['num_points']) : 3,
+				'reduction_percent' => isset($_POST['reduction_percent']) ? absint($_POST['reduction_percent']) : 0,
+			)
+		);
+
+		if (is_wp_error($texts)) {
+			wp_send_json_error(array('message' => $texts->get_error_message()));
+		}
+
+		$summary = $texts['summary'];
+		$teaser = $texts['teaser'];
 
 		// Save to post meta if we have a post ID.
 		if ($post_id > 0) {
