@@ -254,6 +254,18 @@
                         
                         $result.show();
 
+                        // Categories chosen in the same request
+                        if (response.data.category_ids && response.data.category_ids.length) {
+                            self.updateCategoryCheckboxes(response.data.category_ids);
+                            $('#distillpress-category-result').show().find('.distillpress-result-content').html(
+                                '<ul class="distillpress-categories-list">' +
+                                response.data.category_names.map(function(name) {
+                                    return '<li>' + self.escapeHtml(name) + '</li>';
+                                }).join('') +
+                                '</ul>'
+                            );
+                        }
+
                         // Update button text to regenerate
                         var regenerateText = $btn.data('regenerate-text');
                         $btn.find('.distillpress-btn-text').text(regenerateText);

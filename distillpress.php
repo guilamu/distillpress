@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.5.0
+ * Version:           1.6.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.5.0');
+define('DISTILLPRESS_VERSION', '1.6.0');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -501,8 +501,14 @@ final class DistillPress
 				'teaser'            => (bool) get_option('distillpress_enable_teaser', true),
 				'num_points'        => (int) get_option('distillpress_default_num_points', 3),
 				'reduction_percent' => (int) get_option('distillpress_default_reduction_percent', 0),
+				'categories'        => array(),
+				'post_id'           => 0,
 			)
 		);
+
+		// Bluesky allows 300 characters per post: keep room for the article link.
+		$teaser_max_chars = (int) apply_filters('distillpress_teaser_max_chars', 250);
+		$category_names = array_values(array_filter(array_map('strval', (array) $args['categories'])));
 
 		$plain_content = $this->extract_plain_text((string) $raw_content);
 		$enable_summary = (bool) $args['summary'];
@@ -562,6 +568,11 @@ final class DistillPress
 			$json_format = '{"teaser": "Your teaser paragraph here."}';
 		}
 
+		if (!empty($category_names)) {
+			$rules[] = __('Add a "category" field to the JSON', 'distillpress');
+			$json_format = substr($json_format, 0, -1) . ', "category": "Exact category name, or empty string"}';
+		}
+
 		// Number the rules here so the list stays continuous whatever is enabled.
 		$system_instructions = array();
 		foreach ($rules as $index => $rule) {
@@ -605,10 +616,24 @@ final class DistillPress
 		}
 
 		if ($enable_teaser) {
-			$user_prompt .= __('TEASER: Write a short, engaging paragraph (2-3 sentences) that entices readers to read the full article. The teaser should:', 'distillpress') . "\n" .
+			$user_prompt .= __('TEASER: Write a short, engaging paragraph (1-2 sentences) that entices readers to read the full article. The teaser should:', 'distillpress') . "\n" .
+				/* translators: %d: maximum number of characters */
+				sprintf(__('- Be at most %d characters long, spaces included (strict limit)', 'distillpress'), $teaser_max_chars) . "\n" .
 				__('- Highlight the most compelling aspect of the article', 'distillpress') . "\n" .
 				__('- Create curiosity without revealing everything', 'distillpress') . "\n" .
-				__('- Stay factual and based only on the article content', 'distillpress') . "\n\n";
+				__('- Stay factual and based only on the article content', 'distillpress') . "\n";
+
+			$recent_openings = $this->get_recent_teaser_openings((int) $args['post_id']);
+			if (!empty($recent_openings)) {
+				$user_prompt .= __('- Recent teasers started like this. Use a different opening and sentence structure (do not start with the same words):', 'distillpress') . "\n" .
+					'  « ' . implode(" »\n  « ", $recent_openings) . ' »' . "\n";
+			}
+			$user_prompt .= "\n";
+		}
+
+		if (!empty($category_names)) {
+			$user_prompt .= __('CATEGORY: Pick at most ONE category from this list, only if it clearly matches the main topic of the article. Otherwise return an empty string. List:', 'distillpress') . ' ' .
+				implode(', ', $category_names) . "\n\n";
 		}
 
 		$user_prompt .= __('Return ONLY valid JSON in this exact format:', 'distillpress') . "\n" .
@@ -626,10 +651,21 @@ final class DistillPress
 
 		$summary = '';
 		$teaser = '';
+		$category = '';
 
 		if (is_array($parsed)) {
 			$summary = isset($parsed['summary']) ? trim($parsed['summary']) : '';
-			$teaser = isset($parsed['teaser']) ? trim($parsed['teaser']) : '';
+			$teaser = isset($parsed['teaser']) ? $this->limit_teaser(trim($parsed['teaser']), $teaser_max_chars) : '';
+
+			// Keep the category only if it is really one of the proposed names.
+			if (!empty($parsed['category']) && is_string($parsed['category'])) {
+				foreach ($category_names as $name) {
+					if (0 === strcasecmp(trim($parsed['category']), $name)) {
+						$category = $name;
+						break;
+					}
+				}
+			}
 		} else {
 			// Fallback: treat entire response as summary if JSON parsing fails.
 			if ($enable_summary) {
@@ -640,7 +676,99 @@ final class DistillPress
 		return array(
 			'summary' => $summary,
 			'teaser' => $teaser,
+			'category' => $category,
 		);
+	}
+
+	/**
+	 * First words of the latest saved teasers, so the AI can avoid repeating them.
+	 *
+	 * @param int $exclude_post_id Post being edited.
+	 * @return string[]
+	 */
+	private function get_recent_teaser_openings($exclude_post_id)
+	{
+		$post_ids = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => array('publish', 'future', 'draft', 'pending', 'private'),
+				'posts_per_page' => 5,
+				'fields'         => 'ids',
+				'meta_key'       => '_distillpress_teaser', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'post__not_in'   => $exclude_post_id ? array($exclude_post_id) : array(),
+				'no_found_rows'  => true,
+			)
+		);
+
+		$openings = array();
+		foreach ($post_ids as $id) {
+			$words = preg_split('/\s+/u', trim((string) get_post_meta($id, '_distillpress_teaser', true)));
+			if (!empty($words[0])) {
+				$openings[] = implode(' ', array_slice($words, 0, 6)) . '…';
+			}
+		}
+
+		return $openings;
+	}
+
+	/**
+	 * Enforce the teaser length, cutting at a sentence end when possible.
+	 *
+	 * @param string $text Teaser.
+	 * @param int    $max  Maximum number of characters.
+	 * @return string
+	 */
+	private function limit_teaser($text, $max)
+	{
+		if ($max <= 0 || mb_strlen($text) <= $max) {
+			return $text;
+		}
+
+		$cut = mb_substr($text, 0, $max);
+
+		// Last complete sentence, if it keeps at least half of the allowed length.
+		if (preg_match('/^.*[.!?…](?=\s|$)/su', $cut, $m) && mb_strlen($m[0]) >= $max / 2) {
+			return trim($m[0]);
+		}
+
+		$cut = mb_substr($text, 0, $max - 1);
+		$space = mb_strrpos($cut, ' ');
+		if (false !== $space) {
+			$cut = mb_substr($cut, 0, $space);
+		}
+
+		return rtrim($cut, " ,;:-–") . '…';
+	}
+
+	/**
+	 * Default category and the other categories the AI may choose from.
+	 *
+	 * @return array{0:int,1:string,2:array<string,int>} Default ID, default name, name => ID map.
+	 */
+	private function get_category_choices()
+	{
+		$default_id = absint(get_option('distillpress_default_category', 0));
+		$default_name = '';
+		if ($default_id > 0) {
+			$term = get_term($default_id, 'category');
+			if ($term && !is_wp_error($term)) {
+				$default_name = $term->name;
+			} else {
+				$default_id = 0;
+			}
+		}
+
+		$map = array();
+		$terms = get_terms(array('taxonomy' => 'category', 'hide_empty' => false));
+		if (!is_wp_error($terms)) {
+			foreach ($terms as $term) {
+				if ($term->term_id !== $default_id) {
+					$map[$term->name] = $term->term_id;
+				}
+			}
+		}
+
+		return array($default_id, $default_name, $map);
 	}
 
 	/**
@@ -660,6 +788,9 @@ final class DistillPress
 		$enable_summary = (bool) get_option('distillpress_enable_summary', true);
 		$enable_teaser = (bool) get_option('distillpress_enable_teaser', true);
 
+		// The teaser request also picks one category, to save a second AI call.
+		list($default_category_id, $default_category_name, $category_map) = $this->get_category_choices();
+
 		$texts = $this->generate(
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized in extract_plain_text().
 			isset($_POST['content']) ? wp_unslash($_POST['content']) : '',
@@ -668,6 +799,8 @@ final class DistillPress
 				'teaser'            => $enable_teaser,
 				'num_points'        => isset($_POST['num_points']) ? absint($_POST['num_points']) : 3,
 				'reduction_percent' => isset($_POST['reduction_percent']) ? absint($_POST['reduction_percent']) : 0,
+				'categories'        => $enable_teaser ? array_keys($category_map) : array(),
+				'post_id'           => $post_id,
 			)
 		);
 
@@ -688,10 +821,27 @@ final class DistillPress
 			}
 		}
 
+		// Default category + the AI choice, if any.
+		$category_ids = array();
+		$category_names = array();
+		if ($default_category_id > 0) {
+			$category_ids[] = $default_category_id;
+			$category_names[] = $default_category_name;
+		}
+		if ('' !== $texts['category'] && isset($category_map[$texts['category']])) {
+			$category_ids[] = $category_map[$texts['category']];
+			$category_names[] = $texts['category'];
+		}
+		if ($post_id > 0 && !empty($category_ids)) {
+			wp_set_post_categories($post_id, $category_ids);
+		}
+
 		wp_send_json_success(
 			array(
 				'summary' => $summary,
 				'teaser' => $teaser,
+				'category_ids' => $category_ids,
+				'category_names' => $category_names,
 			)
 		);
 	}

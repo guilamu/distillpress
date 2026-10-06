@@ -8,6 +8,8 @@ AI-powered article summarization, teaser generation, and automatic category sele
 - Choose the number of bullet points (1-20)
 - Optionally limit summary length as a percentage of the original content
 - Engaging teaser paragraph generated in the same API call as the summary to save tokens
+- Teaser limited to 250 characters (fits a Bluesky post with the article link; change it with the `distillpress_teaser_max_chars` filter)
+- Teasers vary: the openings of the 5 latest teasers are sent to the AI so it does not start the same way
 - Summaries and teasers are based **only** on your article content — no hallucinations or external knowledge
 - Works in both Classic Editor and Gutenberg/Block Editor
 - One-click copy for both summary and teaser
@@ -17,6 +19,7 @@ AI-powered article summarization, teaser generation, and automatic category sele
 - Set maximum number of categories to select (1-20)
 - Categories are automatically checked in the editor
 - Optional default category that is always applied
+- The teaser button also picks at most one extra category (only if one clearly matches), in the same API call
 - Works with hierarchical categories
 
 ## Choose Your Model & Reasoning
@@ -104,6 +107,11 @@ Yes. Your API key stays server-side. You can also define it in `wp-config.php` u
 ```
 
 ## Changelog
+
+### 1.6.0 - 2026-10-06
+- **New:** The teaser button also selects at most one category from the list (only if it clearly matches), in the same API call. The default category stays applied
+- **New:** Teaser limited to 250 characters (prompt + safe cut at a sentence end), adjustable with the `distillpress_teaser_max_chars` filter
+- **Improved:** More varied teasers: the AI is told how the 5 latest teasers start and must use a different opening and structure
 
 ### 1.5.0 - 2026-10-01
 - **New:** `distillpress()->generate( $content, $args )` public method, so other plugins can generate a summary and/or teaser without the editor (e.g. `array( 'summary' => false )` for a teaser only). The editor button uses the same method
