@@ -8,7 +8,8 @@ AI-powered article summarization, teaser generation, and automatic category sele
 - Choose the number of bullet points (1-20)
 - Optionally limit summary length as a percentage of the original content
 - Engaging teaser paragraph generated in the same API call as the summary to save tokens
-- Teaser limited to 250 characters (fits a Bluesky post with the article link; change it with the `distillpress_teaser_max_chars` filter)
+- Teaser length computed so that teaser + short link (`/?p=123`) fit in a Bluesky post (300 characters); change it with the `distillpress_teaser_max_chars` filter
+- "Social post" box under the teaser: teaser + short link, with a character counter and a Copy button
 - Teasers vary: the openings of the 5 latest teasers are sent to the AI so it does not start the same way
 - Summaries and teasers are based **only** on your article content — no hallucinations or external knowledge
 - Works in both Classic Editor and Gutenberg/Block Editor
@@ -107,6 +108,10 @@ Yes. Your API key stays server-side. You can also define it in `wp-config.php` u
 ```
 
 ## Changelog
+
+### 1.6.1 - 2026-10-06
+- **New:** "Social post" box under the teaser, with the complete post (teaser + short link `/?p=123`), a character counter and a Copy button
+- **Changed:** Teaser length is now computed so that teaser + short link fit in 300 characters (instead of a fixed 250), still adjustable with the `distillpress_teaser_max_chars` filter
 
 ### 1.6.0 - 2026-10-06
 - **New:** The teaser button also selects at most one category from the list (only if it clearly matches), in the same API call. The default category stays applied

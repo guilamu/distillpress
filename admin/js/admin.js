@@ -70,10 +70,29 @@
                     $result.find('.distillpress-teaser-content').html(
                         '<div class="distillpress-teaser">' + this.escapeHtml(savedTeaser) + '</div>'
                     );
+                    this.renderSocialPost(savedTeaser);
                 }
 
                 $result.show();
             }
+        },
+
+        /**
+         * Show the social post: teaser + short link, with its length (Bluesky limit: 300).
+         *
+         * @param {string} teaser Teaser text.
+         */
+        renderSocialPost: function(teaser) {
+            var link = $('.distillpress-metabox').data('social-link') || '';
+            var post = link ? teaser + '\n\n' + link : teaser;
+            var length = Array.from(post).length;
+
+            $('#distillpress-summary-result .distillpress-social-content').html(
+                '<div class="distillpress-social" style="white-space: pre-wrap;">' + this.escapeHtml(post) + '</div>'
+            );
+            $('#distillpress-summary-result .distillpress-social-count')
+                .text('(' + length + '/300)')
+                .css('color', length > 300 ? '#d63638' : '');
         },
 
         /**
@@ -246,6 +265,7 @@
                             $result.find('.distillpress-teaser-content').html(
                                 '<div class="distillpress-teaser">' + self.escapeHtml(response.data.teaser) + '</div>'
                             );
+                            self.renderSocialPost(response.data.teaser);
                         } else if (self.settings.enableTeaser) {
                             $result.find('.distillpress-teaser-content').html(
                                 '<em>' + distillpressData.i18n.no_teaser + '</em>'

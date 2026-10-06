@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.6.0
+ * Version:           1.6.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.6.0');
+define('DISTILLPRESS_VERSION', '1.6.1');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -506,8 +506,9 @@ final class DistillPress
 			)
 		);
 
-		// Bluesky allows 300 characters per post: keep room for the article link.
-		$teaser_max_chars = (int) apply_filters('distillpress_teaser_max_chars', 250);
+		// Bluesky allows 300 characters per post: keep room for two line breaks + the short link.
+		$link = self::get_social_link((int) $args['post_id']);
+		$teaser_max_chars = (int) apply_filters('distillpress_teaser_max_chars', 298 - ('' !== $link ? mb_strlen($link) : 30));
 		$category_names = array_values(array_filter(array_map('strval', (array) $args['categories'])));
 
 		$plain_content = $this->extract_plain_text((string) $raw_content);
@@ -678,6 +679,17 @@ final class DistillPress
 			'teaser' => $teaser,
 			'category' => $category,
 		);
+	}
+
+	/**
+	 * Short link used in social posts (e.g. https://example.com/?p=123), same length for every post.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string Empty string when no short link is available.
+	 */
+	public static function get_social_link($post_id)
+	{
+		return $post_id > 0 ? (string) wp_get_shortlink($post_id, 'post', false) : '';
 	}
 
 	/**

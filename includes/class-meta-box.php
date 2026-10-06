@@ -113,6 +113,7 @@ class DistillPress_Meta_Box
 		?>
 		<div class="distillpress-metabox" data-saved-summary="<?php echo esc_attr($saved_summary); ?>"
 			data-saved-teaser="<?php echo esc_attr($saved_teaser); ?>"
+			data-social-link="<?php echo esc_attr(DistillPress::get_social_link($post->ID)); ?>"
 			data-enable-summary="<?php echo esc_attr($enable_summary ? '1' : '0'); ?>"
 			data-enable-teaser="<?php echo esc_attr($enable_teaser ? '1' : '0'); ?>">
 
@@ -177,6 +178,14 @@ class DistillPress_Meta_Box
 							<div class="distillpress-result-actions">
 								<button type="button" class="button button-small distillpress-copy"
 									data-source="#distillpress-summary-result .distillpress-teaser">
+									<?php esc_html_e('Copy', 'distillpress'); ?>
+								</button>
+							</div>
+							<h5><?php esc_html_e('Social post', 'distillpress'); ?> <span class="distillpress-social-count"></span></h5>
+							<div class="distillpress-result-content distillpress-social-content"></div>
+							<div class="distillpress-result-actions">
+								<button type="button" class="button button-small distillpress-copy"
+									data-source="#distillpress-summary-result .distillpress-social">
 									<?php esc_html_e('Copy', 'distillpress'); ?>
 								</button>
 							</div>
