@@ -120,10 +120,10 @@
                 success: function(response) {
                     if (response.success) {
                         $btn.data('posted', '1');
-                        $('.distillpress-bsky-link').html(
-                            distillpressData.i18n.bsky_posted + ' <a href="' + self.escapeHtml(response.data.url) +
-                            '" target="_blank" rel="noopener">' + self.escapeHtml(response.data.url) + '</a>'
-                        );
+                        $('.distillpress-bsky-link').show().find('a').attr('href', response.data.url);
+                        if (response.data.warning) {
+                            self.showMessage($message, response.data.warning, 'error');
+                        }
                     } else {
                         self.showMessage($message, response.data.message || distillpressData.i18n.error, 'error');
                     }

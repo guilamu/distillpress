@@ -730,3 +730,19 @@ msgstr "Publier sur Bluesky"
 #: includes/class-meta-box.php
 msgid "View on Bluesky"
 msgstr "Voir sur Bluesky"
+
+#: includes/class-bluesky.php
+msgid "Image upload failed."
+msgstr "L'envoi de l'image a échoué."
+
+#: includes/class-bluesky.php
+msgid "The article has no featured image: the card was posted without an image."
+msgstr "L'article n'a pas d'image mise en avant : la carte a été publiée sans image."
+
+#: includes/class-bluesky.php
+msgid "The featured image could not be used (file missing or larger than 1 MB): the card was posted without an image."
+msgstr "L'image mise en avant n'a pas pu être utilisée (fichier introuvable ou de plus de 1 Mo) : la carte a été publiée sans image."
+
+#: includes/class-bluesky.php
+msgid "The article has no image (og:image or featured image): the card was posted without an image."
+msgstr "L'article n'a pas d'image (og:image ou image mise en avant) : la carte a été publiée sans image."

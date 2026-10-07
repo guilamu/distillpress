@@ -186,13 +186,14 @@ class DistillPress_Meta_Box
 										data-posted="<?php echo esc_attr($bsky_url ? '1' : '0'); ?>">
 										<?php esc_html_e('Post on Bluesky', 'distillpress'); ?>
 									</button>
-									<span class="distillpress-bsky-link">
-										<?php if ($bsky_url): ?>
-											<a href="<?php echo esc_url($bsky_url); ?>" target="_blank" rel="noopener"><?php esc_html_e('View on Bluesky', 'distillpress'); ?></a>
-										<?php endif; ?>
-									</span>
 								<?php endif; ?>
 							</div>
+							<?php if (DistillPress_Bluesky::is_configured()): ?>
+								<p class="distillpress-bsky-link" <?php echo $bsky_url ? '' : 'style="display: none;"'; ?>>
+									<?php esc_html_e('Posted on Bluesky:', 'distillpress'); ?>
+									<a href="<?php echo esc_url($bsky_url); ?>" target="_blank" rel="noopener"><?php esc_html_e('View on Bluesky', 'distillpress'); ?></a>
+								</p>
+							<?php endif; ?>
 						<?php endif; ?>
 					</div>
 				</div>

@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.7.0
+ * Version:           1.7.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.7.0');
+define('DISTILLPRESS_VERSION', '1.7.1');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -1008,14 +1008,14 @@ final class DistillPress
 			wp_send_json_error(array('message' => __('No teaser generated.', 'distillpress')));
 		}
 
-		$url = DistillPress_Bluesky::post($post_id, $this->limit_teaser($teaser, 300));
-		if (is_wp_error($url)) {
-			wp_send_json_error(array('message' => $url->get_error_message()));
+		$result = DistillPress_Bluesky::post($post_id, $this->limit_teaser($teaser, 300));
+		if (is_wp_error($result)) {
+			wp_send_json_error(array('message' => $result->get_error_message()));
 		}
 
-		update_post_meta($post_id, '_distillpress_bsky_url', esc_url_raw($url));
+		update_post_meta($post_id, '_distillpress_bsky_url', esc_url_raw($result['url']));
 
-		wp_send_json_success(array('url' => $url));
+		wp_send_json_success($result);
 	}
 
 	/**

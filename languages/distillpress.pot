@@ -728,3 +728,19 @@ msgstr ""
 #: includes/class-meta-box.php
 msgid "View on Bluesky"
 msgstr ""
+
+#: includes/class-bluesky.php
+msgid "Image upload failed."
+msgstr ""
+
+#: includes/class-bluesky.php
+msgid "The article has no featured image: the card was posted without an image."
+msgstr ""
+
+#: includes/class-bluesky.php
+msgid "The featured image could not be used (file missing or larger than 1 MB): the card was posted without an image."
+msgstr ""
+
+#: includes/class-bluesky.php
+msgid "The article has no image (og:image or featured image): the card was posted without an image."
+msgstr ""
