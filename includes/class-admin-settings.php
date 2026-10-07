@@ -179,6 +179,26 @@ class DistillPress_Admin_Settings
 			)
 		);
 
+		register_setting(
+			'distillpress_settings',
+			'distillpress_bsky_handle',
+			array(
+				'type' => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default' => '',
+			)
+		);
+
+		register_setting(
+			'distillpress_settings',
+			'distillpress_bsky_app_password',
+			array(
+				'type' => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default' => '',
+			)
+		);
+
 		// API Settings Section
 		add_settings_section(
 			'distillpress_api_section',
@@ -306,6 +326,83 @@ class DistillPress_Admin_Settings
 			'distillpress',
 			'distillpress_category_section'
 		);
+
+		// Bluesky Section
+		add_settings_section(
+			'distillpress_bluesky_section',
+			__('Bluesky', 'distillpress'),
+			array(__CLASS__, 'render_bluesky_section'),
+			'distillpress'
+		);
+
+		add_settings_field(
+			'distillpress_bsky_handle',
+			__('Bluesky Handle', 'distillpress'),
+			array(__CLASS__, 'render_bsky_handle_field'),
+			'distillpress',
+			'distillpress_bluesky_section'
+		);
+
+		add_settings_field(
+			'distillpress_bsky_app_password',
+			__('Bluesky App Password', 'distillpress'),
+			array(__CLASS__, 'render_bsky_app_password_field'),
+			'distillpress',
+			'distillpress_bluesky_section'
+		);
+	}
+
+	/**
+	 * Render Bluesky section description.
+	 */
+	public static function render_bluesky_section()
+	{
+		echo '<p>' . esc_html__('Adds a "Post on Bluesky" button under the teaser. The post contains the teaser and a link card to the article.', 'distillpress') . '</p>';
+	}
+
+	/**
+	 * Render Bluesky handle field.
+	 */
+	public static function render_bsky_handle_field()
+	{
+		if (defined('DISTILLPRESS_BSKY_HANDLE')) {
+			echo '<input type="text" value="' . esc_attr(DISTILLPRESS_BSKY_HANDLE) . '" class="regular-text" disabled>';
+			return;
+		}
+		?>
+		<input type="text" id="distillpress_bsky_handle" name="distillpress_bsky_handle"
+			value="<?php echo esc_attr(get_option('distillpress_bsky_handle', '')); ?>" class="regular-text" placeholder="name.bsky.social">
+		<?php
+	}
+
+	/**
+	 * Render Bluesky app password field.
+	 */
+	public static function render_bsky_app_password_field()
+	{
+		if (defined('DISTILLPRESS_BSKY_APP_PASSWORD')) {
+			?>
+			<input type="text" value="<?php echo esc_attr(str_repeat('•', 19)); ?>" class="regular-text" disabled>
+			<p class="description"><?php esc_html_e('App password is defined in wp-config.php and cannot be changed here.', 'distillpress'); ?></p>
+			<?php
+			return;
+		}
+		?>
+		<input type="password" id="distillpress_bsky_app_password" name="distillpress_bsky_app_password"
+			value="<?php echo esc_attr(get_option('distillpress_bsky_app_password', '')); ?>" class="regular-text" autocomplete="off">
+		<button type="button" class="button distillpress-toggle-key" data-target="#distillpress_bsky_app_password">
+			<?php esc_html_e('Show', 'distillpress'); ?>
+		</button>
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %s: link to Bluesky app passwords settings */
+				esc_html__('Create an app password (not your main password) at %s.', 'distillpress'),
+				'<a href="https://bsky.app/settings/app-passwords" target="_blank">bsky.app/settings/app-passwords</a>'
+			);
+			?>
+		</p>
+		<?php
 	}
 
 	/**

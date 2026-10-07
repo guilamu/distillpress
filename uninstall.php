@@ -33,6 +33,8 @@ function distillpress_uninstall_options()
 		'distillpress_default_category',
 		'distillpress_enable_summary',
 		'distillpress_enable_teaser',
+		'distillpress_bsky_handle',
+		'distillpress_bsky_app_password',
 		'distillpress_custom_prompt',
 		'distillpress_api_log',
 	);
@@ -62,6 +64,7 @@ function distillpress_uninstall_site()
 
 	delete_post_meta_by_key('_distillpress_summary');
 	delete_post_meta_by_key('_distillpress_teaser');
+	delete_post_meta_by_key('_distillpress_bsky_url');
 }
 
 /**

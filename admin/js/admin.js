@@ -70,7 +70,7 @@
                     $result.find('.distillpress-teaser-content').html(
                         '<div class="distillpress-teaser">' + this.escapeHtml(savedTeaser) + '</div>'
                     );
-                    this.renderSocialPost(savedTeaser);
+                    this.renderTeaserCount(savedTeaser);
                 }
 
                 $result.show();
@@ -78,21 +78,63 @@
         },
 
         /**
-         * Show the social post: teaser + short link, with its length (Bluesky limit: 300).
+         * Show the teaser length next to its title (Bluesky limit: 300).
          *
          * @param {string} teaser Teaser text.
          */
-        renderSocialPost: function(teaser) {
-            var link = $('.distillpress-metabox').data('social-link') || '';
-            var post = link ? teaser + '\n\n' + link : teaser;
-            var length = Array.from(post).length;
+        renderTeaserCount: function(teaser) {
+            var length = Array.from(teaser).length;
 
-            $('#distillpress-summary-result .distillpress-social-content').html(
-                '<div class="distillpress-social" style="white-space: pre-wrap;">' + this.escapeHtml(post) + '</div>'
-            );
-            $('#distillpress-summary-result .distillpress-social-count')
+            $('#distillpress-summary-result .distillpress-teaser-count')
                 .text('(' + length + '/300)')
                 .css('color', length > 300 ? '#d63638' : '');
+        },
+
+        /**
+         * Post the saved teaser on Bluesky, with a link card to the article.
+         *
+         * @param {Event} e Click event.
+         */
+        postBluesky: function(e) {
+            e.preventDefault();
+
+            var self = this;
+            var $btn = $('#distillpress-post-bluesky');
+            var $message = $('#distillpress-message');
+            var posted = String($btn.data('posted')) === '1';
+
+            if (!window.confirm(posted ? distillpressData.i18n.bsky_confirm_again : distillpressData.i18n.bsky_confirm)) {
+                return;
+            }
+
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: distillpressData.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'distillpress_post_bluesky',
+                    nonce: distillpressData.nonce,
+                    post_id: $btn.data('post-id')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $btn.data('posted', '1');
+                        $('.distillpress-bsky-link').html(
+                            distillpressData.i18n.bsky_posted + ' <a href="' + self.escapeHtml(response.data.url) +
+                            '" target="_blank" rel="noopener">' + self.escapeHtml(response.data.url) + '</a>'
+                        );
+                    } else {
+                        self.showMessage($message, response.data.message || distillpressData.i18n.error, 'error');
+                    }
+                },
+                error: function() {
+                    self.showMessage($message, distillpressData.i18n.error, 'error');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false);
+                }
+            });
         },
 
         /**
@@ -107,6 +149,9 @@
 
             // Copy buttons (summary and teaser)
             $(document).on('click', '.distillpress-copy', this.copyText.bind(this));
+
+            // Post on Bluesky button
+            $(document).on('click', '#distillpress-post-bluesky', this.postBluesky.bind(this));
 
             // API key visibility toggles (POE and Gemini)
             $(document).on('click', '.distillpress-toggle-key', this.toggleKeyVisibility.bind(this));
@@ -265,7 +310,7 @@
                             $result.find('.distillpress-teaser-content').html(
                                 '<div class="distillpress-teaser">' + self.escapeHtml(response.data.teaser) + '</div>'
                             );
-                            self.renderSocialPost(response.data.teaser);
+                            self.renderTeaserCount(response.data.teaser);
                         } else if (self.settings.enableTeaser) {
                             $result.find('.distillpress-teaser-content').html(
                                 '<em>' + distillpressData.i18n.no_teaser + '</em>'

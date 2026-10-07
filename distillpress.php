@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.6.1
+ * Version:           1.7.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.6.1');
+define('DISTILLPRESS_VERSION', '1.7.0');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -86,6 +86,7 @@ final class DistillPress
 		require_once DISTILLPRESS_PATH . 'includes/class-github-updater.php';
 		require_once DISTILLPRESS_PATH . 'includes/class-admin-settings.php';
 		require_once DISTILLPRESS_PATH . 'includes/class-meta-box.php';
+		require_once DISTILLPRESS_PATH . 'includes/class-bluesky.php';
 	}
 
 	/**
@@ -105,6 +106,7 @@ final class DistillPress
 		// Register AJAX handlers
 		add_action('wp_ajax_distillpress_generate_summary', array($this, 'ajax_generate_summary'));
 		add_action('wp_ajax_distillpress_auto_categorize', array($this, 'ajax_auto_categorize'));
+		add_action('wp_ajax_distillpress_post_bluesky', array($this, 'ajax_post_bluesky'));
 		add_action('wp_ajax_distillpress_get_models', array($this, 'ajax_get_models'));
 
 		// Add settings link to plugins page
@@ -199,6 +201,9 @@ final class DistillPress
 				'copied' => __('Copied!', 'distillpress'),
 				'no_teaser' => __('No teaser generated.', 'distillpress'),
 				'no_summary' => __('No summary generated.', 'distillpress'),
+				'bsky_confirm' => __('Post this teaser on Bluesky?', 'distillpress'),
+				'bsky_confirm_again' => __('This article was already posted on Bluesky. Post it again?', 'distillpress'),
+				'bsky_posted' => __('Posted on Bluesky:', 'distillpress'),
 				/* translators: %d: number of models */
 				'models_loaded' => __('%d models loaded.', 'distillpress'),
 				'models_error' => __('Unable to load the model list.', 'distillpress'),
@@ -506,9 +511,8 @@ final class DistillPress
 			)
 		);
 
-		// Bluesky allows 300 characters per post: keep room for two line breaks + the short link.
-		$link = self::get_social_link((int) $args['post_id']);
-		$teaser_max_chars = (int) apply_filters('distillpress_teaser_max_chars', 298 - ('' !== $link ? mb_strlen($link) : 30));
+		// Bluesky allows 300 characters per post. The link only loads the preview and is removed before posting.
+		$teaser_max_chars = (int) apply_filters('distillpress_teaser_max_chars', 300);
 		$category_names = array_values(array_filter(array_map('strval', (array) $args['categories'])));
 
 		$plain_content = $this->extract_plain_text((string) $raw_content);
@@ -679,17 +683,6 @@ final class DistillPress
 			'teaser' => $teaser,
 			'category' => $category,
 		);
-	}
-
-	/**
-	 * Short link used in social posts (e.g. https://example.com/?p=123), same length for every post.
-	 *
-	 * @param int $post_id Post ID.
-	 * @return string Empty string when no short link is available.
-	 */
-	public static function get_social_link($post_id)
-	{
-		return $post_id > 0 ? (string) wp_get_shortlink($post_id, 'post', false) : '';
 	}
 
 	/**
@@ -986,6 +979,43 @@ final class DistillPress
 				'category_names' => $valid_category_names,
 			)
 		);
+	}
+
+	/**
+	 * AJAX handler: Post the saved teaser on Bluesky, with a link card to the article.
+	 */
+	public function ajax_post_bluesky()
+	{
+		check_ajax_referer('distillpress_nonce', 'nonce');
+
+		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+
+		if (!$post_id || !current_user_can('publish_posts') || !current_user_can('edit_post', $post_id)) {
+			wp_send_json_error(array('message' => __('Permission denied.', 'distillpress')));
+		}
+
+		if (!DistillPress_Bluesky::is_configured()) {
+			wp_send_json_error(array('message' => __('Please set your Bluesky handle and app password in the settings.', 'distillpress')));
+		}
+
+		// The link card must point to a page that exists.
+		if ('publish' !== get_post_status($post_id)) {
+			wp_send_json_error(array('message' => __('Publish the article before posting it on Bluesky.', 'distillpress')));
+		}
+
+		$teaser = trim((string) get_post_meta($post_id, '_distillpress_teaser', true));
+		if ('' === $teaser) {
+			wp_send_json_error(array('message' => __('No teaser generated.', 'distillpress')));
+		}
+
+		$url = DistillPress_Bluesky::post($post_id, $this->limit_teaser($teaser, 300));
+		if (is_wp_error($url)) {
+			wp_send_json_error(array('message' => $url->get_error_message()));
+		}
+
+		update_post_meta($post_id, '_distillpress_bsky_url', esc_url_raw($url));
+
+		wp_send_json_success(array('url' => $url));
 	}
 
 	/**

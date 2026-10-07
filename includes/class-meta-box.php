@@ -113,7 +113,6 @@ class DistillPress_Meta_Box
 		?>
 		<div class="distillpress-metabox" data-saved-summary="<?php echo esc_attr($saved_summary); ?>"
 			data-saved-teaser="<?php echo esc_attr($saved_teaser); ?>"
-			data-social-link="<?php echo esc_attr(DistillPress::get_social_link($post->ID)); ?>"
 			data-enable-summary="<?php echo esc_attr($enable_summary ? '1' : '0'); ?>"
 			data-enable-teaser="<?php echo esc_attr($enable_teaser ? '1' : '0'); ?>">
 
@@ -173,21 +172,26 @@ class DistillPress_Meta_Box
 							</div>
 						<?php endif; ?>
 						<?php if ($enable_teaser): ?>
-							<h5><?php esc_html_e('Teaser', 'distillpress'); ?></h5>
+							<h5><?php esc_html_e('Teaser', 'distillpress'); ?> <span class="distillpress-teaser-count"></span></h5>
 							<div class="distillpress-result-content distillpress-teaser-content"></div>
 							<div class="distillpress-result-actions">
 								<button type="button" class="button button-small distillpress-copy"
 									data-source="#distillpress-summary-result .distillpress-teaser">
 									<?php esc_html_e('Copy', 'distillpress'); ?>
 								</button>
-							</div>
-							<h5><?php esc_html_e('Social post', 'distillpress'); ?> <span class="distillpress-social-count"></span></h5>
-							<div class="distillpress-result-content distillpress-social-content"></div>
-							<div class="distillpress-result-actions">
-								<button type="button" class="button button-small distillpress-copy"
-									data-source="#distillpress-summary-result .distillpress-social">
-									<?php esc_html_e('Copy', 'distillpress'); ?>
-								</button>
+								<?php if (DistillPress_Bluesky::is_configured()): ?>
+									<?php $bsky_url = get_post_meta($post->ID, '_distillpress_bsky_url', true); ?>
+									<button type="button" class="button button-small" id="distillpress-post-bluesky"
+										data-post-id="<?php echo esc_attr($post->ID); ?>"
+										data-posted="<?php echo esc_attr($bsky_url ? '1' : '0'); ?>">
+										<?php esc_html_e('Post on Bluesky', 'distillpress'); ?>
+									</button>
+									<span class="distillpress-bsky-link">
+										<?php if ($bsky_url): ?>
+											<a href="<?php echo esc_url($bsky_url); ?>" target="_blank" rel="noopener"><?php esc_html_e('View on Bluesky', 'distillpress'); ?></a>
+										<?php endif; ?>
+									</span>
+								<?php endif; ?>
 							</div>
 						<?php endif; ?>
 					</div>

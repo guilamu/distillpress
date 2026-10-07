@@ -8,8 +8,8 @@ AI-powered article summarization, teaser generation, and automatic category sele
 - Choose the number of bullet points (1-20)
 - Optionally limit summary length as a percentage of the original content
 - Engaging teaser paragraph generated in the same API call as the summary to save tokens
-- Teaser length computed so that teaser + short link (`/?p=123`) fit in a Bluesky post (300 characters); change it with the `distillpress_teaser_max_chars` filter
-- "Social post" box under the teaser: teaser + short link, with a character counter and a Copy button
+- Teaser limited to 300 characters (one Bluesky post), with a character counter; change it with the `distillpress_teaser_max_chars` filter
+- "Post on Bluesky" button under the teaser: posts the teaser with a link card to the article (title, teaser, featured image). Needs a Bluesky handle and an app password in the settings (or the `DISTILLPRESS_BSKY_HANDLE` / `DISTILLPRESS_BSKY_APP_PASSWORD` constants in `wp-config.php`)
 - Teasers vary: the openings of the 5 latest teasers are sent to the AI so it does not start the same way
 - Summaries and teasers are based **only** on your article content — no hallucinations or external knowledge
 - Works in both Classic Editor and Gutenberg/Block Editor
@@ -108,6 +108,11 @@ Yes. Your API key stays server-side. You can also define it in `wp-config.php` u
 ```
 
 ## Changelog
+
+### 1.7.0 - 2026-10-07
+- **New:** "Post on Bluesky" button under the teaser: posts the teaser with a link card to the article (title, teaser, featured image). Only for published articles; asks for confirmation, and warns when the article was already posted. Settings: Bluesky handle + app password (or `DISTILLPRESS_BSKY_HANDLE` / `DISTILLPRESS_BSKY_APP_PASSWORD` in `wp-config.php`)
+- **Changed:** Teaser limit raised to 300 characters, with the character counter shown next to the teaser. Still adjustable with the `distillpress_teaser_max_chars` filter
+- **Removed:** "Social post" box (identical to the teaser)
 
 ### 1.6.1 - 2026-10-06
 - **New:** "Social post" box under the teaser, with the complete post (teaser + short link `/?p=123`), a character counter and a Copy button

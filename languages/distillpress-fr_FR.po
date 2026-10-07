@@ -655,3 +655,78 @@ msgstr "Recherche..."
 msgid "Unable to rename the update folder. Please retry or update manually."
 msgstr "Impossible de renommer le dossier de mise à jour. Veuillez réessayer ou mettre à jour manuellement."
 
+#: distillpress.php
+msgid "Post this teaser on Bluesky?"
+msgstr "Publier cette accroche sur Bluesky ?"
+
+#: distillpress.php
+msgid "This article was already posted on Bluesky. Post it again?"
+msgstr "Cet article a déjà été publié sur Bluesky. Le publier à nouveau ?"
+
+#: distillpress.php
+msgid "Posted on Bluesky:"
+msgstr "Publié sur Bluesky :"
+
+#: distillpress.php
+msgid "Add a \"category\" field to the JSON"
+msgstr "Ajoutez un champ \"category\" au JSON"
+
+#: distillpress.php
+msgid "TEASER: Write a short, engaging paragraph (1-2 sentences) that entices readers to read the full article. The teaser should:"
+msgstr "ACCROCHE : Écrivez un court paragraphe attrayant (1-2 phrases) qui incite les lecteurs à lire l'article complet. L'accroche doit :"
+
+#: distillpress.php
+msgid "- Be at most %d characters long, spaces included (strict limit)"
+msgstr "- Faire au maximum %d caractères, espaces comprises (limite stricte)"
+
+#: distillpress.php
+msgid "- Recent teasers started like this. Use a different opening and sentence structure (do not start with the same words):"
+msgstr "- Les accroches récentes commençaient ainsi. Utilisez une autre entrée en matière et une autre construction de phrase (ne commencez pas par les mêmes mots) :"
+
+#: distillpress.php
+msgid "CATEGORY: Pick at most ONE category from this list, only if it clearly matches the main topic of the article. Otherwise return an empty string. List:"
+msgstr "CATÉGORIE : Choisissez au plus UNE catégorie dans cette liste, seulement si elle correspond clairement au sujet principal de l'article. Sinon, renvoyez une chaîne vide. Liste :"
+
+#: distillpress.php
+msgid "Please set your Bluesky handle and app password in the settings."
+msgstr "Veuillez renseigner votre identifiant Bluesky et votre mot de passe d'application dans les réglages."
+
+#: distillpress.php
+msgid "Publish the article before posting it on Bluesky."
+msgstr "Publiez l'article avant de le poster sur Bluesky."
+
+#: includes/class-admin-settings.php
+msgid "Bluesky"
+msgstr "Bluesky"
+
+#: includes/class-admin-settings.php
+msgid "Bluesky Handle"
+msgstr "Identifiant Bluesky"
+
+#: includes/class-admin-settings.php
+msgid "Bluesky App Password"
+msgstr "Mot de passe d'application Bluesky"
+
+#: includes/class-admin-settings.php
+msgid "Adds a \"Post on Bluesky\" button under the teaser. The post contains the teaser and a link card to the article."
+msgstr "Ajoute un bouton « Publier sur Bluesky » sous l'accroche. Le post contient l'accroche et une carte d'aperçu vers l'article."
+
+#: includes/class-admin-settings.php
+msgid "App password is defined in wp-config.php and cannot be changed here."
+msgstr "Le mot de passe d'application est défini dans wp-config.php et ne peut pas être modifié ici."
+
+#: includes/class-admin-settings.php
+msgid "Create an app password (not your main password) at %s."
+msgstr "Créez un mot de passe d'application (pas votre mot de passe principal) sur %s."
+
+#: includes/class-bluesky.php
+msgid "Bluesky error: %s"
+msgstr "Erreur Bluesky : %s"
+
+#: includes/class-meta-box.php
+msgid "Post on Bluesky"
+msgstr "Publier sur Bluesky"
+
+#: includes/class-meta-box.php
+msgid "View on Bluesky"
+msgstr "Voir sur Bluesky"
