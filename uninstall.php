@@ -33,6 +33,7 @@ function distillpress_uninstall_options()
 		'distillpress_default_category',
 		'distillpress_enable_summary',
 		'distillpress_enable_teaser',
+		'distillpress_teaser_max_chars',
 		'distillpress_bsky_handle',
 		'distillpress_bsky_app_password',
 		'distillpress_custom_prompt',

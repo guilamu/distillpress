@@ -8,7 +8,7 @@ AI-powered article summarization, teaser generation, and automatic category sele
 - Choose the number of bullet points (1-20)
 - Optionally limit summary length as a percentage of the original content
 - Engaging teaser paragraph generated in the same API call as the summary to save tokens
-- Teaser limited to 300 characters (one Bluesky post), with a character counter; change it with the `distillpress_teaser_max_chars` filter
+- Teaser limited to 300 characters by default (one Bluesky post), with a character counter; change it in the settings (50-300) or with the `distillpress_teaser_max_chars` filter
 - "Post on Bluesky" button under the teaser: posts the teaser with a link card to the article (title, teaser, and the article `og:image`, or else its featured image; filter `distillpress_bluesky_thumb_url`). Needs a Bluesky handle and an app password in the settings (or the `DISTILLPRESS_BSKY_HANDLE` / `DISTILLPRESS_BSKY_APP_PASSWORD` constants in `wp-config.php`)
 - Teasers vary: the openings of the 5 latest teasers are sent to the AI so it does not start the same way
 - Summaries and teasers are based **only** on your article content — no hallucinations or external knowledge
@@ -63,6 +63,14 @@ AI-powered article summarization, teaser generation, and automatic category sele
 ### What does the Reasoning Effort setting do?
 It tells the model how much thinking to spend before answering, from **Off** to **Maximum**. Providers expose different controls, so the plugin sends the one each model advertises and stays silent for models that expose none. Leave it on **Model default** to change nothing.
 
+### How do I change the teaser length?
+Go to **Settings → DistillPress → Summary Settings** and set **Teaser Maximum Length** (50-300 characters, default 300). The AI is told to stay under it, the teaser is cut at a sentence end if it is longer, and the counter under the teaser shows the limit. 300 is the most a Bluesky post allows. The `distillpress_teaser_max_chars` filter, if used, overrides the setting:
+```php
+add_filter( 'distillpress_teaser_max_chars', function() {
+    return 200;
+} );
+```
+
 ### Does it work with the Block Editor (Gutenberg)?
 Yes. DistillPress works with both the Classic Editor and Gutenberg.
 
@@ -99,6 +107,7 @@ Yes. Your API key stays server-side. You can also define it in `wp-config.php` u
 │   ├── class-gemini-api-service.php  # Gemini endpoint and reasoning effort
 │   ├── class-admin-settings.php      # Settings page and fields
 │   ├── class-meta-box.php            # Editor meta box
+│   ├── class-bluesky.php             # Bluesky posting with link card
 │   ├── class-github-updater.php      # GitHub auto-updates
 │   └── Parsedown.php                 # Markdown parser for the details popup
 └── languages
@@ -108,6 +117,12 @@ Yes. Your API key stays server-side. You can also define it in `wp-config.php` u
 ```
 
 ## Changelog
+
+### 1.8.0 - 2026-10-08
+- **New:** "Teaser Maximum Length" setting in **Summary Settings** (50-300 characters, default 300). Out-of-range values are brought back to the nearest limit
+- **Changed:** The character counter under the teaser shows the configured limit instead of a fixed 300
+- **Changed:** The `distillpress_teaser_max_chars` filter now starts from the setting value and still overrides it
+- **Improved:** The setting is removed on uninstall; French translation added
 
 ### 1.7.1 - 2026-10-07
 - **Fixed:** Bluesky card image: uses the article `og:image` (read from disk when it is in the uploads folder), or else the featured image. Adjustable with the `distillpress_bluesky_thumb_url` filter. A warning explains why when the card is posted without an image

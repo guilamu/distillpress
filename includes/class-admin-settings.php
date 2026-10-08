@@ -171,6 +171,16 @@ class DistillPress_Admin_Settings
 
 		register_setting(
 			'distillpress_settings',
+			'distillpress_teaser_max_chars',
+			array(
+				'type' => 'integer',
+				'sanitize_callback' => array(__CLASS__, 'sanitize_teaser_max_chars'),
+				'default' => 300,
+			)
+		);
+
+		register_setting(
+			'distillpress_settings',
 			'distillpress_custom_prompt',
 			array(
 				'type' => 'string',
@@ -291,6 +301,14 @@ class DistillPress_Admin_Settings
 			'distillpress_enable_teaser',
 			__('Enable Teaser', 'distillpress'),
 			array(__CLASS__, 'render_enable_teaser_field'),
+			'distillpress',
+			'distillpress_summary_section'
+		);
+
+		add_settings_field(
+			'distillpress_teaser_max_chars',
+			__('Teaser Maximum Length', 'distillpress'),
+			array(__CLASS__, 'render_teaser_max_chars_field'),
 			'distillpress',
 			'distillpress_summary_section'
 		);
@@ -768,6 +786,33 @@ class DistillPress_Admin_Settings
 			<?php esc_html_e('Generate teaser paragraphs', 'distillpress'); ?>
 		</label>
 		<?php
+	}
+
+	/**
+	 * Render teaser maximum length field.
+	 */
+	public static function render_teaser_max_chars_field()
+	{
+		$max_chars = get_option('distillpress_teaser_max_chars', 300);
+		?>
+		<input type="number" id="distillpress_teaser_max_chars" name="distillpress_teaser_max_chars"
+			value="<?php echo esc_attr($max_chars); ?>" class="small-text" min="50" max="300">
+		<span><?php esc_html_e('characters', 'distillpress'); ?></span>
+		<p class="description">
+			<?php esc_html_e('Maximum teaser length, spaces included (50-300). 300 is the length of a Bluesky post.', 'distillpress'); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Sanitize the teaser maximum length (50-300, the Bluesky post limit).
+	 *
+	 * @param mixed $value Submitted value.
+	 * @return int
+	 */
+	public static function sanitize_teaser_max_chars($value)
+	{
+		return max(50, min(300, absint($value)));
 	}
 
 	/**

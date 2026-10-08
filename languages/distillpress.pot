@@ -744,3 +744,15 @@ msgstr ""
 #: includes/class-bluesky.php
 msgid "The article has no image (og:image or featured image): the card was posted without an image."
 msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Teaser Maximum Length"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "characters"
+msgstr ""
+
+#: includes/class-admin-settings.php
+msgid "Maximum teaser length, spaces included (50-300). 300 is the length of a Bluesky post."
+msgstr ""

@@ -78,16 +78,17 @@
         },
 
         /**
-         * Show the teaser length next to its title (Bluesky limit: 300).
+         * Show the teaser length next to its title (limit from the settings, 300 at most for Bluesky).
          *
          * @param {string} teaser Teaser text.
          */
         renderTeaserCount: function(teaser) {
             var length = Array.from(teaser).length;
+            var max = parseInt(distillpressData.teaserMaxChars, 10) || 300;
 
             $('#distillpress-summary-result .distillpress-teaser-count')
-                .text('(' + length + '/300)')
-                .css('color', length > 300 ? '#d63638' : '');
+                .text('(' + length + '/' + max + ')')
+                .css('color', length > max ? '#d63638' : '');
         },
 
         /**
