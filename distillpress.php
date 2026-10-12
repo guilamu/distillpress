@@ -3,7 +3,7 @@
  * Plugin Name:       DistillPress
  * Plugin URI:        https://github.com/guilamu/distillpress
  * Description:       AI-powered article summarization and automatic category selection using POE or Google Gemini API. Distill your content to its essence.
- * Version:           1.8.0
+ * Version:           1.8.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            guilamu
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('DISTILLPRESS_VERSION', '1.8.0');
+define('DISTILLPRESS_VERSION', '1.8.1');
 define('DISTILLPRESS_PATH', plugin_dir_path(__FILE__));
 define('DISTILLPRESS_URL', plugin_dir_url(__FILE__));
 define('DISTILLPRESS_BASENAME', plugin_basename(__FILE__));
@@ -622,9 +622,11 @@ final class DistillPress
 		}
 
 		if ($enable_teaser) {
-			$user_prompt .= __('TEASER: Write a short, engaging paragraph (1-2 sentences) that entices readers to read the full article. The teaser should:', 'distillpress') . "\n" .
-				/* translators: %d: maximum number of characters */
-				sprintf(__('- Be at most %d characters long, spaces included (strict limit)', 'distillpress'), $teaser_max_chars) . "\n" .
+			list($teaser_min_chars, $teaser_target_chars) = $this->teaser_length_range($teaser_max_chars);
+
+			$user_prompt .= __('TEASER: Write an engaging paragraph (1-2 sentences) that entices readers to read the full article. The teaser should:', 'distillpress') . "\n" .
+				/* translators: 1: target number of characters, 2: minimum, 3: maximum */
+				sprintf(__('- Be about %1$d characters long, spaces included: between %2$d and %3$d, never more than %3$d. Use the room you have', 'distillpress'), $teaser_target_chars, $teaser_min_chars, $teaser_max_chars) . "\n" .
 				__('- Highlight the most compelling aspect of the article', 'distillpress') . "\n" .
 				__('- Create curiosity without revealing everything', 'distillpress') . "\n" .
 				__('- Stay factual and based only on the article content', 'distillpress') . "\n";
@@ -661,7 +663,7 @@ final class DistillPress
 
 		if (is_array($parsed)) {
 			$summary = isset($parsed['summary']) ? trim($parsed['summary']) : '';
-			$teaser = isset($parsed['teaser']) ? $this->limit_teaser(trim($parsed['teaser']), $teaser_max_chars) : '';
+			$teaser = isset($parsed['teaser']) ? $this->fit_teaser(trim((string) $parsed['teaser']), $teaser_max_chars) : '';
 
 			// Keep the category only if it is really one of the proposed names.
 			if (!empty($parsed['category']) && is_string($parsed['category'])) {
@@ -715,6 +717,64 @@ final class DistillPress
 		}
 
 		return $openings;
+	}
+
+	/**
+	 * Length range asked for the teaser.
+	 *
+	 * A model cannot count characters: given only a strict maximum, it keeps a wide safety
+	 * margin and stops 10 to 20% short. A target just under the maximum fills the room.
+	 *
+	 * @param int $max Maximum number of characters.
+	 * @return int[] Minimum and target number of characters.
+	 */
+	private function teaser_length_range($max)
+	{
+		return array(
+			(int) round($max * 0.88),
+			(int) round($max * 0.95),
+		);
+	}
+
+	/**
+	 * Bring a teaser that is too long back under the limit.
+	 *
+	 * Aiming close to the maximum means the model sometimes goes over it. Cutting would then
+	 * drop the last sentence and halve the teaser: the model is asked once to shorten it
+	 * instead. The cut stays as a last resort, if that request fails or is still too long.
+	 *
+	 * @param string $teaser Teaser.
+	 * @param int    $max    Maximum number of characters.
+	 * @return string
+	 */
+	private function fit_teaser($teaser, $max)
+	{
+		if ($max <= 0 || '' === $teaser || mb_strlen($teaser) <= $max) {
+			return $teaser;
+		}
+
+		list($min, $target) = $this->teaser_length_range($max);
+
+		$system_prompt = __('You shorten texts without changing their meaning, tone or language. Return only the shortened text, without quotes or comments.', 'distillpress');
+		/* translators: 1: current number of characters, 2: target, 3: minimum, 4: maximum */
+		$user_prompt = sprintf(
+			__('This teaser has %1$d characters, spaces included. Rewrite it in about %2$d characters: between %3$d and %4$d, never more than %4$d. Keep its facts and its last sentence.', 'distillpress'),
+			mb_strlen($teaser),
+			$target,
+			$min,
+			$max
+		) . "\n\n" . $teaser;
+
+		$result = self::request_completion($system_prompt, $user_prompt, 0.2, 1000, 'teaser');
+
+		if (!is_wp_error($result)) {
+			$shorter = preg_replace('/^"(.*)"$/su', '$1', trim((string) $result));
+			if ('' !== $shorter && mb_strlen($shorter) <= $max && mb_strlen($shorter) >= $max / 2) {
+				return $shorter;
+			}
+		}
+
+		return $this->limit_teaser($teaser, $max);
 	}
 
 	/**

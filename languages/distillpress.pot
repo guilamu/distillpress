@@ -670,11 +670,11 @@ msgid "Add a \"category\" field to the JSON"
 msgstr ""
 
 #: distillpress.php
-msgid "TEASER: Write a short, engaging paragraph (1-2 sentences) that entices readers to read the full article. The teaser should:"
+msgid "TEASER: Write an engaging paragraph (1-2 sentences) that entices readers to read the full article. The teaser should:"
 msgstr ""
 
 #: distillpress.php
-msgid "- Be at most %d characters long, spaces included (strict limit)"
+msgid "- Be about %1$d characters long, spaces included: between %2$d and %3$d, never more than %3$d. Use the room you have"
 msgstr ""
 
 #: distillpress.php
@@ -755,4 +755,12 @@ msgstr ""
 
 #: includes/class-admin-settings.php
 msgid "Maximum teaser length, spaces included (50-300). 300 is the length of a Bluesky post."
+msgstr ""
+
+#: distillpress.php
+msgid "You shorten texts without changing their meaning, tone or language. Return only the shortened text, without quotes or comments."
+msgstr ""
+
+#: distillpress.php
+msgid "This teaser has %1$d characters, spaces included. Rewrite it in about %2$d characters: between %3$d and %4$d, never more than %4$d. Keep its facts and its last sentence."
 msgstr ""

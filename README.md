@@ -118,6 +118,11 @@ Yes. Your API key stays server-side. You can also define it in `wp-config.php` u
 
 ## Changelog
 
+### 1.8.1 - 2026-10-12
+- **Fixed:** Teasers stopped 10 to 20% short of the maximum length (about 255 characters for a 300 limit): the model, given only a strict maximum, kept a wide safety margin. The prompt now asks for about 95% of the maximum (between 88% and 100%) and no longer calls the teaser "short"
+- **Changed:** A teaser over the limit is no longer cut to its last complete sentence, which could halve it: the model is asked once to shorten it. The cut remains as a last resort
+- **Improved:** French translation updated
+
 ### 1.8.0 - 2026-10-08
 - **New:** "Teaser Maximum Length" setting in **Summary Settings** (50-300 characters, default 300). Out-of-range values are brought back to the nearest limit
 - **Changed:** The character counter under the teaser shows the configured limit instead of a fixed 300
